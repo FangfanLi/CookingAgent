@@ -492,6 +492,7 @@ export default function App() {
                     <div style={{display:"flex",gap:8}}>
                       <span style={{fontFamily:"sans-serif",fontSize:12,color:"#4caf50"}}>{(plan.meals||[]).filter(m=>m.status==="cooked").length} ✓</span>
                       <span style={{fontFamily:"sans-serif",fontSize:12,color:"#666"}}>{(plan.meals||[]).filter(m=>m.status==="skipped").length} ✗</span>
+                      <button onClick={()=>{const next=history.filter(p=>p.id!==plan.id);setHistory(next);if(!dbReady)localStorage.setItem("planHistory",JSON.stringify(next));}} style={{padding:"2px 8px",borderRadius:99,border:"1px solid #3a1010",background:"transparent",color:"#8a2020",fontFamily:"sans-serif",fontSize:11,cursor:"pointer"}}>✕</button>
                     </div>
                   </div>
                   {(plan.meals||[]).map((meal,i)=>(
