@@ -77,7 +77,6 @@ const I18N = {
     historyEmpty:"还没有食谱记录，生成第一份吧！",
     markCooked:"✓ 已做", markSkipped:"✗ 跳过", weekLabel:"生成于",
     needPass:"请先输入口令。", needCreator:"请至少添加一位博主。",
-    needKey:"请先保存 API 密钥。", needCreator:"请至少添加一位博主。",
     dbLoading:"正在加载你的数据…", dbError:"无法连接数据库，使用本地存储。",
     days:["周一","周二","周三","周四","周五"],
     prompt:(creators,history)=>{
@@ -246,6 +245,7 @@ export default function App() {
         if(videoData?.creators){
           const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
           if(pool.length>=5) selectedMeals=pickDiverseMeals(pool,5);
+          else if(pool.length>0) selectedMeals=pickDiverseMeals(pool,Math.min(pool.length,5));
         }
       }catch(e){console.warn("Video fetch failed, continuing without:",e);}
 
