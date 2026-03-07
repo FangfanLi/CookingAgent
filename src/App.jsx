@@ -11,11 +11,11 @@ const POPULAR_YOUTUBE_EN = [
 ];
 
 const POPULAR_YOUTUBE_ZH = [
-  { name: "王刚 Chef Wang Gang",          id: "wanggang-yt" },
-  { name: "老饭骨",                        id: "laofangu" },
-  { name: "小高姐的Magic Ingredients",    id: "xiaogaojie" },
-  { name: "尚食厨房",                      id: "shangshichufang" },
-  { name: "锅铲居士",                      id: "guochanjushi" },
+  { name: "王刚 Chef Wang Gang",          id: "chefwang" },
+  { name: "老饭骨",                        id: "LaoFanGu" },
+  { name: "小高姐的Magic Ingredients",    id: "magicingredients" },
+  { name: "尚食厨房",                      id: "shangshikitchen" },
+  { name: "酒满饭宝",                      id: "hkchefpo" },
 ];
 
 const POPULAR_BILIBILI = [
