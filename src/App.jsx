@@ -10,11 +10,11 @@ const POPULAR_YOUTUBE_EN = [
   { name: "Alex French Guy",    id: "UCl3DmLIQFPxeRRkqnBpE5qQ" },
 ];
 const POPULAR_YOUTUBE_ZH = [
-  { name: "王刚 Chef Wang Gang",       id: "chefwang" },
-  { name: "老饭骨",                     id: "LaoFanGu" },
-  { name: "小高姐的Magic Ingredients", id: "magicingredients" },
-  { name: "尚食厨房",                   id: "shangshikitchen" },
-  { name: "酒满饭宝",                   id: "hkchefpo" },
+  { name: "王刚 Chef Wang Gang",       id: "UChrcDm7u2mF3II4F7idmXiQ" },
+  { name: "老饭骨",                     id: "UCBJmYv3Vf_tKcQr5_qmayXg" },
+  { name: "小高姐的Magic Ingredients", id: "UCCKlp1JI9Yg3-cUjKPdD3mw" },
+  { name: "尚食厨房",                   id: "UCfeyXE_GpytPjdPe_NnEW5A" },
+  { name: "酒满饭宝",                   id: "UCCKpnVvmiifnaIQuXCSlYng" },
 ];
 const POPULAR_BILIBILI = [
   { name: "锅铲居士",             id: "502299736" },
@@ -56,7 +56,7 @@ const I18N = {
     days:["Monday","Tuesday","Wednesday","Thursday","Friday"],
     prompt:(creators,history)=>{
       const avoid=history.length?`\nRecently cooked — please avoid repeating: ${history.join(", ")}.`:"";
-      return `You are a weekly meal planning assistant. The user follows: ${creators.join(", ")}.${avoid}\n\nGenerate a practical weekly meal plan. Respond in English.\n\nIMPORTANT PROTEIN RULE: The 5 meals MUST use at least 4 different proteins — e.g. chicken, beef, seafood, pork, tofu, eggs, lamb. Never repeat the same protein more than once across the week.\n\n## 🗓️ Your Week in Food\n5 meals Mon–Fri. EXACTLY this format per meal (no deviations):\n### [Day] — [Meal Name]\n*Inspired by [Creator]*\n[Description]. [X] min · [Easy/Medium/Hard]\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+      return `You are a weekly meal planning assistant. The user follows: ${creators.join(", ")}.${avoid}\n\nGenerate a practical weekly meal plan. Respond in English.\n\nIMPORTANT PROTEIN RULE: The 5 meals MUST use at least 4 different proteins — e.g. chicken, beef, seafood, pork, tofu, eggs, lamb. Never repeat the same protein more than once across the week.\n\n## 🗓️ Your Week in Food\n5 meals Mon–Fri. EXACTLY this format per meal (no deviations):\n### [Day] — [Meal Name]\n*Inspired by [Creator]*\n[Description]. [X] min · [Easy/Medium/Hard]\n🔗 [Creator] https://www.youtube.com/results?search_query=[Creator]+[Meal+Name]\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
     },
     promptWithVideos:(selectedMeals)=>{
       const mealList=selectedMeals.map((m,i)=>`${i+1}. "${m.title}" by ${m.creator}`).join("\n");
@@ -84,7 +84,7 @@ const I18N = {
     days:["周一","周二","周三","周四","周五"],
     prompt:(creators,history)=>{
       const avoid=history.length?`\n近期已做（请避免重复）：${history.join("、")}。`:"";
-      return `你是每周食谱规划助手。用户关注：${creators.join("、")}。${avoid}\n\n生成一份实用的一周食谱。完全用中文回答。\n\n重要蛋白质规则：5道菜必须使用至少4种不同蛋白质——例如猪肉、鸡肉、牛肉、海鲜、豆腐、鸡蛋、羊肉。同一种蛋白质不得在一周内重复超过一次。\n\n## 🗓️ 本周食谱\n周一至周五5道菜。严格按此格式（不得更改）：\n### [星期] — [菜名]\n*灵感来自 [博主]*\n[描述]。约[X]分钟 · [简单/中等/难]\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
+      return `你是每周食谱规划助手。用户关注：${creators.join("、")}。${avoid}\n\n生成一份实用的一周食谱。完全用中文回答。\n\n重要蛋白质规则：5道菜必须使用至少4种不同蛋白质——例如猪肉、鸡肉、牛肉、海鲜、豆腐、鸡蛋、羊肉。同一种蛋白质不得在一周内重复超过一次。\n\n## 🗓️ 本周食谱\n周一至周五5道菜。严格按此格式（不得更改）：\n### [星期] — [菜名]\n*灵感来自 [博主]*\n[描述]。约[X]分钟 · [简单/中等/难]\n🔗 [博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
     },
     promptWithVideos:(selectedMeals)=>{
       const mealList=selectedMeals.map((m,i)=>`${i+1}. 「${m.title}」来自 ${m.creator}`).join("\n");
@@ -246,11 +246,15 @@ export default function App() {
         const videoPromise=api.fetchVideos(ytCreators,biliCreators);
         const timeout=new Promise(r=>setTimeout(()=>r(null),6000));
         const videoData=await Promise.race([videoPromise,timeout]);
+        console.log("[MealPlanner] video API response:", videoData);
         if(videoData?.creators){
           const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
+          console.log("[MealPlanner] video pool size:", pool.length, "selectedMeals:", pool.length>=5?"yes":"no (need >=5)");
           if(pool.length>=5) selectedMeals=pickDiverseMeals(pool,5);
         }
-      }catch(e){console.warn("Video fetch failed, continuing without:",e);}
+      }catch(e){console.warn("[MealPlanner] Video fetch failed, continuing without:",e);}
+
+      console.log("[MealPlanner] using mode:", selectedMeals?"real videos":"fallback (no videos)");
 
       // If we have pre-selected real meals, ask Gemini just to describe them.
       // Otherwise fall back to letting Gemini pick meals.
