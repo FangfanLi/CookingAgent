@@ -17,10 +17,10 @@ const POPULAR_YOUTUBE_ZH = [
   { name: "酒满饭宝",                   id: "hkchefpo" },
 ];
 const POPULAR_BILIBILI = [
-  { name: "锅铲居士",               id: "502299736" },
-  { name: "叔叔的临时生活安顿处",   id: "1816377225" },
-  { name: "米线厨房",               id: "10891313" },
-  { name: "王哥盐帮菜",             id: "1742023657" },
+  { name: "锅铲居士",             id: "502299736" },
+  { name: "叔叔的临时生活安顿处", id: "1816377225" },
+  { name: "米线厨房",             id: "10891313" },
+  { name: "王哥盐帮菜",           id: "1742023657" },
 ];
 
 // ── API helpers ───────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ export default function App() {
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
     try{
       const prompt=t.prompt(ytList.map(c=>c.d),biliList.map(c=>c.d),recentlyCooked);
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1500}})});
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1500}})});
       clearInterval(iv);
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API error");}
       const data=await res.json();
