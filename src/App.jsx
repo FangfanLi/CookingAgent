@@ -31,6 +31,7 @@ const api = {
   patchMeal:(planId,mealIndex,status)=>fetch("/api/plans",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({planId,mealIndex,status})}).then(r=>r.json()),
   clearHistory:()=>fetch("/api/plans",{method:"DELETE"}).then(r=>r.json()),
   fetchVideos:(yt,bili)=>fetch("/api/videos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({youtube:yt,bilibili:bili})}).then(r=>r.json()),
+  generate:(passphrase,prompt)=>fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({passphrase,prompt})}).then(r=>r.json()),
 };
 
 // ── i18n ──────────────────────────────────────────────────────────────────────
@@ -38,9 +39,7 @@ const I18N = {
   en: {
     badge:"🍳 Weekly Meal Planner", h1:["Cook like","your favorites."],
     sub:"Add your cooking creators → get a full week of meals & groceries",
-    apiLabel:"Gemini API Key", apiSaved:"✓ Saved", apiSetup:"Set up →", apiHide:"Hide",
-    apiDesc:<>Free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{color:"#c87020"}}>aistudio.google.com</a> → Get API key. Completely free.</>,
-    apiSaveBtn:"Save", apiChange:"Change", apiPlaceholder:"AIza...", apiError:"Key should start with AIza...", apiSessionKey:"gemini_key",
+    passLabel:"Passphrase", passSaved:"✓ Remembered", passPlaceholder:"Enter passphrase…", passError:"Incorrect passphrase, please try again.", passSaveBtn:"Unlock", passChange:"Change",
     ytSection:"YouTube Creators", ytQuickAdd:"Quick add:", ytPlaceholder:"Paste YouTube URL or @handle…",
     biliSection:"Bilibili Creators", biliQuickAdd:"Quick add:", biliPlaceholder:"Paste Bilibili URL, UID, or type a name…",
     addBtn:"Add", noCreators:"None added yet",
@@ -51,7 +50,7 @@ const I18N = {
     historyTab:"📋 History", plannerTab:"🍳 Planner", historyTitle:"Past Plans",
     historyEmpty:"No plans yet — generate your first one!",
     markCooked:"✓ Cooked", markSkipped:"✗ Skip", weekLabel:"Week of",
-    needKey:"Please save your API key first.", needCreator:"Add at least one creator.",
+    needPass:"Please enter the passphrase first.", needCreator:"Add at least one creator.",
     dbLoading:"Loading your data…", dbError:"Could not connect to database — using local storage.",
     days:["Monday","Tuesday","Wednesday","Thursday","Friday"],
     prompt:(creators,history)=>{
@@ -66,9 +65,7 @@ const I18N = {
   zh: {
     badge:"🍳 每周食谱规划", h1:["跟着喜欢的","美食博主做饭。"],
     sub:"添加你喜欢的美食博主 → 获取一周食谱和购物清单",
-    apiLabel:"Gemini API 密钥", apiSaved:"✓ 已保存", apiSetup:"设置 →", apiHide:"收起",
-    apiDesc:<>在 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{color:"#c87020"}}>aistudio.google.com</a> 免费获取密钥，无需付费。</>,
-    apiSaveBtn:"保存", apiChange:"更换", apiPlaceholder:"AIza...", apiError:"密钥应以 AIza 开头", apiSessionKey:"gemini_key",
+    passLabel:"访问口令", passSaved:"✓ 已记住", passPlaceholder:"输入口令…", passError:"口令不正确，请重试。", passSaveBtn:"解锁", passChange:"更换",
     ytSection:"YouTube 博主", ytQuickAdd:"快速添加：", ytPlaceholder:"粘贴 YouTube 链接或 @handle…",
     biliSection:"B站博主", biliQuickAdd:"快速添加：", biliPlaceholder:"粘贴B站链接、UID 或直接输入博主名…",
     addBtn:"添加", noCreators:"还没有添加博主",
@@ -79,6 +76,7 @@ const I18N = {
     historyTab:"📋 历史记录", plannerTab:"🍳 规划", historyTitle:"历史食谱",
     historyEmpty:"还没有食谱记录，生成第一份吧！",
     markCooked:"✓ 已做", markSkipped:"✗ 跳过", weekLabel:"生成于",
+    needPass:"请先输入口令。", needCreator:"请至少添加一位博主。",
     needKey:"请先保存 API 密钥。", needCreator:"请至少添加一位博主。",
     dbLoading:"正在加载你的数据…", dbError:"无法连接数据库，使用本地存储。",
     days:["周一","周二","周三","周四","周五"],
@@ -174,9 +172,8 @@ export default function App() {
   const [history,  setHistory]  = useState([]);
 
   // Session
-  const [apiKey,       setApiKey]       = useState(()=>sessionStorage.getItem("gemini_key")||"");
-  const [apiKeySaved,  setApiKeySaved]  = useState(()=>!!sessionStorage.getItem("gemini_key"));
-  const [showKeySetup, setShowKeySetup] = useState(false);
+  const [passphrase,     setPassphrase]     = useState(()=>localStorage.getItem("app_passphrase")||"");
+  const [passVerified,   setPassVerified]   = useState(()=>!!localStorage.getItem("app_passphrase"));
   const [stage,        setStage]        = useState("setup");
   const [currentPlan,  setCurrentPlan]  = useState(null);
   const [error,        setError]        = useState("");
@@ -223,7 +220,7 @@ export default function App() {
   const setYt   = v=>{ const next=typeof v==="function"?v(ytList):v;   setYtList(next);   saveCreators(next,biliList); };
   const setBili = v=>{ const next=typeof v==="function"?v(biliList):v; setBiliList(next); saveCreators(ytList,next);   };
 
-  const saveKey=()=>{ if(!apiKey.startsWith("AIza")){setError(t.apiError);return;} sessionStorage.setItem("gemini_key",apiKey); setApiKeySaved(true);setShowKeySetup(false);setError(""); };
+  const savePass=()=>{ if(!passphrase.trim()){setError(t.passError);return;} localStorage.setItem("app_passphrase",passphrase); setPassVerified(true);setError(""); };
   const addYt   =raw=>{ const d=parseYT(raw);   if(d&&!ytList.find(c=>c.d===d))   setYt(p=>[...p,{raw,d}]); };
   const addBili =raw=>{ const d=parseBili(raw); if(d&&!biliList.find(c=>c.d===d)) setBili(p=>[...p,{raw,d}]); };
 
@@ -232,7 +229,7 @@ export default function App() {
 
   // ── Generate ─────────────────────────────────────────────────────────────
   const generate=async()=>{
-    if(!apiKeySaved){setError(t.needKey);return;}
+    if(!passVerified){setError(t.needPass);return;}
     if(!totalCreators){setError(t.needCreator);return;}
     setError("");setStage("generating");
     const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
@@ -246,25 +243,23 @@ export default function App() {
         const videoPromise=api.fetchVideos(ytCreators,biliCreators);
         const timeout=new Promise(r=>setTimeout(()=>r(null),6000));
         const videoData=await Promise.race([videoPromise,timeout]);
-        console.log("[MealPlanner] video API response:", videoData);
         if(videoData?.creators){
           const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
-          console.log("[MealPlanner] video pool size:", pool.length, "selectedMeals:", pool.length>=5?"yes":"no (need >=5)");
           if(pool.length>=5) selectedMeals=pickDiverseMeals(pool,5);
         }
-      }catch(e){console.warn("[MealPlanner] Video fetch failed, continuing without:",e);}
-
-      console.log("[MealPlanner] using mode:", selectedMeals?"real videos":"fallback (no videos)");
+      }catch(e){console.warn("Video fetch failed, continuing without:",e);}
 
       // If we have pre-selected real meals, ask Gemini just to describe them.
       // Otherwise fall back to letting Gemini pick meals.
       const allCreators=[...ytList.map(c=>c.d),...biliList.map(c=>c.d)];
       const prompt=selectedMeals?t.promptWithVideos(selectedMeals):t.prompt(allCreators,recentlyCooked);
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:4000}})});
+      const result=await api.generate(passphrase,prompt);
       clearInterval(iv);
-      if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API error");}
-      const data=await res.json();
-      let text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
+      if(result.error){
+        if(result.error==="incorrect_passphrase"){localStorage.removeItem("app_passphrase");setPassVerified(false);throw new Error(t.passError);}
+        throw new Error(result.error);
+      }
+      let text=result.text||"";
       // Inject real 🔗 links after each meal section
       if(selectedMeals) text=injectVideoLinks(text,selectedMeals,t.days);
       const meals=extractMeals(text);
@@ -376,26 +371,21 @@ export default function App() {
         {/* ── SETUP ── */}
         {stage==="setup"&&(
           <>
-            {/* API Key */}
+            {/* Passphrase */}
             <div style={C.card}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <span style={{...C.label,margin:0}}>{t.apiLabel}</span>
-                {apiKeySaved
-                  ?<span style={{background:"#0a1f0a",border:"1px solid #1a4a1a",borderRadius:99,padding:"3px 12px",fontSize:12,color:"#4caf50",fontFamily:"sans-serif"}}>{t.apiSaved}</span>
-                  :<button style={{...C.ghost,fontSize:12,padding:"4px 10px",color:"#c87020",borderColor:"#3d2800"}} onClick={()=>setShowKeySetup(s=>!s)}>{showKeySetup?t.apiHide:t.apiSetup}</button>
-                }
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:passVerified?0:10}}>
+                <span style={{...C.label,margin:0}}>{t.passLabel}</span>
+                {passVerified&&<span style={{background:"#0a1f0a",border:"1px solid #1a4a1a",borderRadius:99,padding:"3px 12px",fontSize:12,color:"#4caf50",fontFamily:"sans-serif"}}>{t.passSaved}</span>}
               </div>
-              {!apiKeySaved&&showKeySetup&&(
-                <><p style={{color:"#6a5a3a",fontFamily:"sans-serif",fontSize:13,lineHeight:1.6,margin:"0 0 10px"}}>{t.apiDesc}</p>
+              {!passVerified&&(
                 <div style={{display:"flex",gap:10}}>
-                  <input style={{...C.input,flex:1}} type="password" placeholder={t.apiPlaceholder} value={apiKey} onChange={e=>setApiKey(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveKey()}/>
-                  <button style={C.btn} onClick={saveKey}>{t.apiSaveBtn}</button>
-                </div></>
+                  <input style={{...C.input,flex:1}} type="password" placeholder={t.passPlaceholder} value={passphrase} onChange={e=>setPassphrase(e.target.value)} onKeyDown={e=>e.key==="Enter"&&savePass()}/>
+                  <button style={C.btn} onClick={savePass}>{t.passSaveBtn}</button>
+                </div>
               )}
-              {apiKeySaved&&(
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <span style={{fontFamily:"monospace",fontSize:13,color:"#3d2800"}}>AIza••••••••••••••••••••</span>
-                  <button style={{...C.ghost,fontSize:12,padding:"4px 10px"}} onClick={()=>{setApiKeySaved(false);setShowKeySetup(true);}}>{t.apiChange}</button>
+              {passVerified&&(
+                <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",marginTop:6}}>
+                  <button style={{...C.ghost,fontSize:12,padding:"4px 10px"}} onClick={()=>{localStorage.removeItem("app_passphrase");setPassVerified(false);setPassphrase("");}}>{t.passChange}</button>
                 </div>
               )}
             </div>
@@ -441,7 +431,7 @@ export default function App() {
 
             {error&&<div style={{background:"#1a0800",border:"1px solid #5a1a00",borderRadius:10,padding:"10px 14px",color:"#ff6b35",fontFamily:"sans-serif",fontSize:13,marginBottom:12}}>⚠ {error}</div>}
 
-            <button style={{...C.bigBtn,opacity:totalCreators>0&&apiKeySaved?1:0.4,marginBottom:10}} onClick={generate} disabled={!totalCreators||!apiKeySaved}>{t.generateBtn}</button>
+            <button style={{...C.bigBtn,opacity:totalCreators>0&&passVerified?1:0.4,marginBottom:10}} onClick={generate} disabled={!totalCreators||!passVerified}>{t.generateBtn}</button>
             <div style={{textAlign:"center"}}>
               <button style={{...C.ghost,fontSize:13}} onClick={()=>{const meals=extractMeals(SAMPLE);const plan={id:Date.now(),created_at:new Date().toISOString(),text:SAMPLE,meals};setCurrentPlan(plan);setStage("result");}}>{t.previewBtn}</button>
             </div>
