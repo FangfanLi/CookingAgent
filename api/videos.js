@@ -2,6 +2,20 @@
 // POST /api/videos
 // Body: { youtube: [{ name, channelId? }], bilibili: [{ name, uid? }] }
 
+// In-memory cache for Bilibili results (persists across requests within same serverless instance)
+const biliCache = new Map(); // key: uid or name, value: { ts, data }
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+function getCached(key) {
+  const entry = biliCache.get(key);
+  if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.data;
+  return null;
+}
+
+function setCache(key, data) {
+  biliCache.set(key, { ts: Date.now(), data });
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -37,9 +51,21 @@ export default async function handler(req, res) {
       console.log("[Bilibili] creator:", creator.name, "resolved UID:", uid);
       if (!uid) return bilibiliFallback(creator.name);
 
+      // Check cache first
+      const cacheKey = `bili_videos_${uid}`;
+      const cached = getCached(cacheKey);
+      if (cached) {
+        console.log("[Bilibili] cache hit for UID:", uid);
+        return { name: creator.name, platform: "bilibili", videos: pickVideos(cached) };
+      }
+
       const videos = await fetchBilibiliVideos(uid);
       console.log("[Bilibili] creator:", creator.name, "videos found:", videos.length);
       if (!videos.length) return bilibiliFallback(creator.name);
+
+      // Cache the raw video list
+      setCache(cacheKey, videos);
+
       return { name: creator.name, platform: "bilibili", videos: pickVideos(videos) };
     } catch (e) {
       console.error(`[Bilibili] error for ${creator.name}:`, e.message);
@@ -144,6 +170,5 @@ function bilibiliFallback(name) {
     fallback: true,
     searchUrl: `https://search.bilibili.com/all?keyword=${encodeURIComponent(name)}`,
     videos: { recent: [], random: [] },
-    },
   };
 }
