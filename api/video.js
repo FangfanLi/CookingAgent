@@ -74,8 +74,12 @@ async function fetchYouTubeRSS(channelId) {
   let match;
   while ((match = entryRegex.exec(xml)) !== null) {
     const titleMatch = match[1].match(/<media:title>([\s\S]*?)<\/media:title>/);
-    if (titleMatch) {
-      entries.push(titleMatch[1].trim());
+    const idMatch = match[1].match(/<yt:videoId>([\s\S]*?)<\/yt:videoId>/);
+    if (titleMatch && idMatch) {
+      entries.push({
+        title: titleMatch[1].trim(),
+        url: `https://www.youtube.com/watch?v=${idMatch[1].trim()}`,
+      });
     }
   }
   return entries;
@@ -100,7 +104,10 @@ async function fetchBilibiliVideos(uid) {
   );
   const data = await res.json();
   const vlist = data?.data?.list?.vlist || [];
-  return vlist.map((v) => v.title);
+  return vlist.map((v) => ({
+    title: v.title,
+    url: `https://www.bilibili.com/video/${v.bvid}`,
+  }));
 }
 
 // ── Pick 5 recent + 10 random ────────────────────────────────────────────────
