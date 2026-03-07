@@ -142,14 +142,14 @@ export default function App() {
         setHistory(data.plans || []);
         setDbReady(true);
       })
-      .catch(()=>{
-        // Fall back to localStorage silently
+      .catch(err=>{
+        console.warn("DB fallback:", err?.message || err);
         try{
           setYtList(JSON.parse(localStorage.getItem("ytList")||"[]"));
           setBiliList(JSON.parse(localStorage.getItem("biliList")||"[]"));
           setHistory(JSON.parse(localStorage.getItem("planHistory")||"[]"));
         }catch{}
-        setDbError(true);
+        setDbError(err?.message || "connection failed");
       })
       .finally(()=>setDbLoading(false));
   },[]);
@@ -274,7 +274,7 @@ export default function App() {
             ))}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            {dbError&&<span style={{fontSize:11,color:"#8a4a20",fontFamily:"sans-serif"}}>⚠ local</span>}
+            {dbError&&<span title={dbError} style={{fontSize:11,color:"#8a4a20",fontFamily:"sans-serif",cursor:"help"}}>⚠ local</span>}
             {dbReady&&<span style={{fontSize:11,color:"#2a6a2a",fontFamily:"sans-serif"}}>● cloud</span>}
             <button onClick={()=>setStage(stage==="history"?"setup":"history")}
               style={{...C.ghost,fontSize:12,padding:"5px 14px",color:stage==="history"?"#c87020":"#6a5a3a",borderColor:stage==="history"?"#3d2800":"#2a1f0a"}}>
