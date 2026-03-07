@@ -134,24 +134,34 @@ export default function App() {
 
   // ── Load data from DB on mount ───────────────────────────────────────────
   useEffect(()=>{
+    const fallback = (msg) => {
+      try{
+        setYtList(JSON.parse(localStorage.getItem("ytList")||"[]"));
+        setBiliList(JSON.parse(localStorage.getItem("biliList")||"[]"));
+        setHistory(JSON.parse(localStorage.getItem("planHistory")||"[]"));
+      }catch{}
+      setDbError(msg || "connection failed");
+      setDbLoading(false);
+    };
+
+    // 8s timeout so the loading screen never hangs forever
+    const timer = setTimeout(()=>fallback("Request timed out"), 8000);
+
     api.get()
       .then(data=>{
+        clearTimeout(timer);
         if(data.error) throw new Error(data.error);
         setYtList(data.creators.yt   || []);
         setBiliList(data.creators.bili || []);
         setHistory(data.plans || []);
         setDbReady(true);
+        setDbLoading(false);
       })
       .catch(err=>{
+        clearTimeout(timer);
         console.warn("DB fallback:", err?.message || err);
-        try{
-          setYtList(JSON.parse(localStorage.getItem("ytList")||"[]"));
-          setBiliList(JSON.parse(localStorage.getItem("biliList")||"[]"));
-          setHistory(JSON.parse(localStorage.getItem("planHistory")||"[]"));
-        }catch{}
-        setDbError(err?.message || "connection failed");
-      })
-      .finally(()=>setDbLoading(false));
+        fallback(err?.message || "connection failed");
+      });
   },[]);
 
   // ── Persist creators to DB whenever they change ──────────────────────────
