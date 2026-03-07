@@ -3,33 +3,33 @@ import { neon } from "@neondatabase/serverless";
 export const runtime = "edge";
 
 export default async function handler(req) {
-  const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
-  if (!dbUrl) {
-    return Response.json({ error: "DATABASE_URL not set" }, { status: 500 });
-  }
-
-  const sql = neon(dbUrl);
-
-  // Auto-create tables
-  await sql`
-    CREATE TABLE IF NOT EXISTS creators (
-      id         SERIAL PRIMARY KEY,
-      platform   TEXT NOT NULL,
-      name       TEXT NOT NULL,
-      handle     TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )
-  `;
-  await sql`
-    CREATE TABLE IF NOT EXISTS plans (
-      id         SERIAL PRIMARY KEY,
-      created_at TIMESTAMPTZ DEFAULT NOW(),
-      text       TEXT NOT NULL,
-      meals      JSONB NOT NULL DEFAULT '[]'
-    )
-  `;
-
   try {
+    const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+    if (!dbUrl) {
+      return Response.json({ error: "DATABASE_URL not set" }, { status: 500 });
+    }
+
+    const sql = neon(dbUrl);
+
+    // Auto-create tables — inside try so any failure returns a clean error
+    await sql`
+      CREATE TABLE IF NOT EXISTS creators (
+        id         SERIAL PRIMARY KEY,
+        platform   TEXT NOT NULL,
+        name       TEXT NOT NULL,
+        handle     TEXT NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS plans (
+        id         SERIAL PRIMARY KEY,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        text       TEXT NOT NULL,
+        meals      JSONB NOT NULL DEFAULT '[]'
+      )
+    `;
+
     // GET — load all data
     if (req.method === "GET") {
       const plans    = await sql`SELECT * FROM plans    ORDER BY created_at DESC LIMIT 12`;
@@ -51,7 +51,7 @@ export default async function handler(req) {
       return Response.json({ plan });
     }
 
-    // POST save_creators — use Promise.all instead of for-of
+    // POST save_creators
     if (req.method === "POST" && body.action === "save_creators") {
       await sql`DELETE FROM creators`;
       const ytRows   = (body.yt   || []).map(c => sql`INSERT INTO creators (platform, name, handle) VALUES ('yt',   ${c.d}, ${c.raw})`);
