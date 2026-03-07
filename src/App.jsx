@@ -98,6 +98,39 @@ const SAMPLE_ZH=`## 🗓️ 本周食谱\n\n### 周一 — 红烧肉\n*灵感来
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function extractMeals(text){const meals=[];for(const line of text.split("\n")){const m=line.match(/^###\s+(.+?)\s+[—–-]\s+(.+)$/);if(m)meals.push({day:m[1].trim(),name:m[2].trim(),status:"pending"});}return meals;}
+
+function replaceLinksWithReal(text,videos){
+  // For each 🔗 line, find the best matching video by comparing to the preceding meal name
+  const lines=text.split("\n");
+  let lastMealName="";
+  for(let i=0;i<lines.length;i++){
+    const mealMatch=lines[i].match(/^###\s+.+?\s+[—–-]\s+(.+)$/);
+    if(mealMatch) lastMealName=mealMatch[1].trim().toLowerCase();
+    if(lines[i].startsWith("🔗 ")&&lastMealName){
+      const best=findBestVideoMatch(lastMealName,videos);
+      if(best){
+        // Extract the label (creator name) from the existing line
+        const labelMatch=lines[i].match(/🔗\s+(.+?)\s+https?:\/\//);
+        const mdMatch=lines[i].match(/🔗\s+\[(.+?)\]\(.+?\)/);
+        const label=mdMatch?mdMatch[1]:(labelMatch?labelMatch[1].trim():"Video");
+        lines[i]=`🔗 [${label}](${best.url})`;
+      }
+    }
+  }
+  return lines.join("\n");
+}
+
+function findBestVideoMatch(mealName,videos){
+  const words=mealName.replace(/[^\w\s\u4e00-\u9fff]/g,"").split(/\s+/).filter(w=>w.length>2);
+  let best=null,bestScore=0;
+  for(const v of videos){
+    const title=v.title.toLowerCase();
+    let score=0;
+    for(const w of words){if(title.includes(w.toLowerCase()))score++;}
+    if(score>bestScore){bestScore=score;best=v;}
+  }
+  return bestScore>0?best:null;
+}
 function parseYT(v){if(v.includes("youtube.com/@"))return"@"+v.split("youtube.com/@")[1].split(/[/?]/)[0];if(v.includes("youtube.com/c/"))return v.split("youtube.com/c/")[1].split(/[/?]/)[0];if(v.includes("youtube.com/channel/"))return v.split("youtube.com/channel/")[1].split(/[/?]/)[0];return v.trim();}
 function parseBili(v){if(v.includes("space.bilibili.com/"))return"UID:"+v.split("space.bilibili.com/")[1].split(/[/?]/)[0];if(v.includes("bilibili.com/@"))return v.split("bilibili.com/@")[1].split(/[/?]/)[0];return v.trim();}
 
@@ -193,6 +226,7 @@ export default function App() {
     try{
       // Fetch real videos from creators (5 recent + 10 random each)
       let videoContext="";
+      let allVideos=[];
       try{
         const ytCreators=ytList.map(c=>{const p=[...POPULAR_YOUTUBE_EN,...POPULAR_YOUTUBE_ZH].find(x=>x.name===c.d);return{name:c.d,channelId:p?.id};});
         const biliCreators=biliList.map(c=>{const p=POPULAR_BILIBILI.find(x=>x.name===c.d);return{name:c.d,uid:c.d.startsWith("UID:")?c.d.slice(4):p?.id};});
@@ -200,7 +234,8 @@ export default function App() {
         const timeout=new Promise(r=>setTimeout(()=>r(null),6000));
         const videoData=await Promise.race([videoPromise,timeout]);
         if(videoData?.creators){
-          videoContext=videoData.creators.map(c=>{const vids=[...(c.videos.recent||[]),...(c.videos.random||[])];return`${c.name} (${c.platform}):\n${vids.map(v=>`  - ${v.title} ${v.url}`).join("\n")}`;}).join("\n");
+          videoContext=videoData.creators.map(c=>{const vids=[...(c.videos.recent||[]),...(c.videos.random||[])];return`${c.name} (${c.platform}):\n${vids.map(v=>`  - ${v.title}`).join("\n")}`;}).join("\n");
+          allVideos=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])]);
         }
       }catch(e){console.warn("Video fetch failed, continuing without:",e);}
 
@@ -209,7 +244,9 @@ export default function App() {
       clearInterval(iv);
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API error");}
       const data=await res.json();
-      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
+      let text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
+      // Post-process: replace search URLs with real video URLs by matching meal names to video titles
+      if(allVideos.length){text=replaceLinksWithReal(text,allVideos);}
       const meals=extractMeals(text);
       let plan={id:Date.now(),created_at:new Date().toISOString(),text,meals};
       // Save to DB
