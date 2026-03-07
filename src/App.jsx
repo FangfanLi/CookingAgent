@@ -30,6 +30,7 @@ const api = {
   saveCreators:(yt,bili)=> fetch("/api/plans",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"save_creators",yt,bili})}).then(r=>r.json()),
   patchMeal:(planId,mealIndex,status)=>fetch("/api/plans",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({planId,mealIndex,status})}).then(r=>r.json()),
   clearHistory:()=>fetch("/api/plans",{method:"DELETE"}).then(r=>r.json()),
+  fetchVideos:(yt,bili)=>fetch("/api/videos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({youtube:yt,bilibili:bili})}).then(r=>r.json()),
 };
 
 // ── i18n ──────────────────────────────────────────────────────────────────────
@@ -52,12 +53,13 @@ const I18N = {
     markCooked:"✓ Cooked", markSkipped:"✗ Skip", weekLabel:"Week of",
     needKey:"Please save your API key first.", needCreator:"Add at least one creator.",
     dbLoading:"Loading your data…", dbError:"Could not connect to database — using local storage.",
-    prompt:(yt,bili,history)=>{
+    prompt:(yt,bili,history,videoContext)=>{
       const parts=[];
       if(yt.length)   parts.push(`YouTube creators: ${yt.join(", ")}`);
       if(bili.length) parts.push(`Bilibili creators: ${bili.join(", ")}`);
       const avoid=history.length?`\n\nRecently cooked — please avoid repeating: ${history.join(", ")}.`:"";
-      return `You are a weekly meal planning assistant. The user follows:\n${parts.join("\n")}${avoid}\n\nGenerate a practical weekly meal plan. Respond in English.\n\nIMPORTANT PROTEIN RULE: The 5 meals MUST use at least 4 different proteins — e.g. chicken, beef, seafood, pork, tofu, eggs, lamb. Never repeat the same protein more than once across the week.\n\n## 🗓️ Your Week in Food\n5 meals Mon–Fri. EXACTLY this format per meal (no deviations):\n### [Day] — [Meal Name]\n*Inspired by [Creator]*\n[Description]. [X] min · [Easy/Medium/Hard]\n🔗 For YouTube creators: [Creator] https://www.youtube.com/results?search_query=[Creator]+[Meal+Name]\n🔗 For Bilibili creators: [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Meal+Name]\nUse the correct link based on which platform the creator is from.\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+      const videos=videoContext?`\n\nHere are REAL recent videos from these creators. Base the meal plan on these actual recipes:\n${videoContext}\nPrioritize dishes from these real videos over made-up recipes.`:"";
+      return `You are a weekly meal planning assistant. The user follows:\n${parts.join("\n")}${avoid}${videos}\n\nGenerate a practical weekly meal plan. Respond in English.\n\nIMPORTANT PROTEIN RULE: The 5 meals MUST use at least 4 different proteins — e.g. chicken, beef, seafood, pork, tofu, eggs, lamb. Never repeat the same protein more than once across the week.\n\n## 🗓️ Your Week in Food\n5 meals Mon–Fri. EXACTLY this format per meal (no deviations):\n### [Day] — [Meal Name]\n*Inspired by [Creator]*\n[Description]. [X] min · [Easy/Medium/Hard]\n🔗 For YouTube creators: [Creator] https://www.youtube.com/results?search_query=[Creator]+[Meal+Name]\n🔗 For Bilibili creators: [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Meal+Name]\nUse the correct link based on which platform the creator is from.\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
     },
   },
   zh: {
@@ -78,12 +80,13 @@ const I18N = {
     markCooked:"✓ 已做", markSkipped:"✗ 跳过", weekLabel:"生成于",
     needKey:"请先保存 API 密钥。", needCreator:"请至少添加一位博主。",
     dbLoading:"正在加载你的数据…", dbError:"无法连接数据库，使用本地存储。",
-    prompt:(yt,bili,history)=>{
+    prompt:(yt,bili,history,videoContext)=>{
       const parts=[];
       if(yt.length)   parts.push(`YouTube博主：${yt.join("、")}`);
       if(bili.length) parts.push(`B站博主：${bili.join("、")}`);
       const avoid=history.length?`\n\n近期已做（请避免重复）：${history.join("、")}。`:"";
-      return `你是每周食谱规划助手。用户关注：\n${parts.join("\n")}${avoid}\n\n生成一份实用的一周食谱。完全用中文回答。\n\n重要蛋白质规则：5道菜必须使用至少4种不同蛋白质——例如猪肉、鸡肉、牛肉、海鲜、豆腐、鸡蛋、羊肉。同一种蛋白质不得在一周内重复超过一次。\n\n## 🗓️ 本周食谱\n周一至周五5道菜。严格按此格式（不得更改）：\n### [星期] — [菜名]\n*灵感来自 [博主]*\n[描述]。约[X]分钟 · [简单/中等/难]\n🔗 YouTube博主：[博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n🔗 B站博主：[博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]\n根据博主所在平台使用对应链接。\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
+      const videos=videoContext?`\n\n以下是这些博主的真实近期视频，请基于这些实际菜谱生成食谱：\n${videoContext}\n优先使用这些真实视频中的菜谱，不要编造。`:"";
+      return `你是每周食谱规划助手。用户关注：\n${parts.join("\n")}${avoid}${videos}\n\n生成一份实用的一周食谱。完全用中文回答。\n\n重要蛋白质规则：5道菜必须使用至少4种不同蛋白质——例如猪肉、鸡肉、牛肉、海鲜、豆腐、鸡蛋、羊肉。同一种蛋白质不得在一周内重复超过一次。\n\n## 🗓️ 本周食谱\n周一至周五5道菜。严格按此格式（不得更改）：\n### [星期] — [菜名]\n*灵感来自 [博主]*\n[描述]。约[X]分钟 · [简单/中等/难]\n🔗 YouTube博主：[博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n🔗 B站博主：[博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]\n根据博主所在平台使用对应链接。\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
     },
   },
 };
@@ -188,8 +191,21 @@ export default function App() {
     const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
     try{
-      const prompt=t.prompt(ytList.map(c=>c.d),biliList.map(c=>c.d),recentlyCooked);
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1500}})});
+      // Fetch real videos from creators (5 recent + 10 random each)
+      let videoContext="";
+      try{
+        const ytCreators=ytList.map(c=>{const p=[...POPULAR_YOUTUBE_EN,...POPULAR_YOUTUBE_ZH].find(x=>x.name===c.d);return{name:c.d,channelId:p?.id};});
+        const biliCreators=biliList.map(c=>{const p=POPULAR_BILIBILI.find(x=>x.name===c.d);return{name:c.d,uid:c.d.startsWith("UID:")?c.d.slice(4):p?.id};});
+        const videoPromise=api.fetchVideos(ytCreators,biliCreators);
+        const timeout=new Promise(r=>setTimeout(()=>r(null),6000));
+        const videoData=await Promise.race([videoPromise,timeout]);
+        if(videoData?.creators){
+          videoContext=videoData.creators.map(c=>{const titles=[...(c.videos.recent||[]),...(c.videos.random||[])];return`${c.name} (${c.platform}): ${titles.join(" | ")}`;}).join("\n");
+        }
+      }catch(e){console.warn("Video fetch failed, continuing without:",e);}
+
+      const prompt=t.prompt(ytList.map(c=>c.d),biliList.map(c=>c.d),recentlyCooked,videoContext);
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:4000}})});
       clearInterval(iv);
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API error");}
       const data=await res.json();
