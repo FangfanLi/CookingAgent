@@ -34,13 +34,14 @@ export default async function handler(req, res) {
       if (!uid) {
         uid = await resolveBilibiliUid(creator.name);
       }
-      if (!uid) return null;
+      if (!uid) return bilibiliFallback(creator.name);
 
       const videos = await fetchBilibiliVideos(uid);
+      if (!videos.length) return bilibiliFallback(creator.name);
       return { name: creator.name, platform: "bilibili", videos: pickVideos(videos) };
     } catch (e) {
       console.error(`Bilibili error for ${creator.name}:`, e.message);
-      return null;
+      return bilibiliFallback(creator.name);
     }
   });
 
@@ -126,4 +127,17 @@ function pickVideos(titles) {
   }
 
   return { recent: recent, random: shuffled.slice(0, 10) };
+}
+
+// When Bilibili API fails, return the creator with a search-link fallback
+// so they still get included in meal selection
+function bilibiliFallback(name) {
+  return {
+    name,
+    platform: "bilibili",
+    videos: {
+      recent: [{ title: name, url: `https://search.bilibili.com/all?keyword=${encodeURIComponent(name)}` }],
+      random: [],
+    },
+  };
 }
