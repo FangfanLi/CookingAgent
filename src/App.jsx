@@ -312,7 +312,7 @@ export default function App() {
     bigBtn:{width:"100%",padding:"15px",fontSize:16,borderRadius:12,background:"linear-gradient(135deg,#c87020,#e8a030)",border:"none",color:"#0c0a06",fontFamily:"Georgia,serif",fontWeight:900,cursor:"pointer"},
     label:{fontFamily:"sans-serif",fontSize:11,color:"#6a5a3a",textTransform:"uppercase",letterSpacing:1.2,marginBottom:8,display:"block"},
     qLabel:c=>({fontSize:11,color:c,fontFamily:"sans-serif",marginBottom:7}),
-    qBtn:added=>({background:added?"#051a0a":"#0f0c05",border:`1px solid ${added?"#1a5a2a":"#2a1f0a"}`,borderRadius:99,padding:"5px 12px",fontFamily:"sans-serif",fontSize:12,color:added?"#4caf50":"#8a6a3a",cursor:added?"default":"pointer"}),
+    qBtn:added=>({background:added?"#051a0a":"#0f0c05",border:`1px solid ${added?"#1a5a2a":"#2a1f0a"}`,borderRadius:99,padding:"5px 12px",fontFamily:"sans-serif",fontSize:12,color:added?"#4caf50":"#8a6a3a",cursor:"pointer"}),
     sc:s=>s==="cooked"?"#4caf50":s==="skipped"?"#666":"#c87020",
   };
 
@@ -414,7 +414,7 @@ export default function App() {
               </div>
               <div style={C.qLabel("#5a3a2a")}>{t.ytQuickAdd}</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:14}}>
-                {POPULAR_YOUTUBE.map(c=>{const added=!!ytList.find(x=>x.d===c.name);return<button key={c.id} onClick={()=>!added&&addYt(c.name)} style={C.qBtn(added)}>{added?"✓ ":"+ "}{c.name}</button>;})}
+                {POPULAR_YOUTUBE.map(c=>{const added=!!ytList.find(x=>x.d===c.name);return<button key={c.id} onClick={()=>added?setYt(p=>p.filter(x=>x.d!==c.name)):addYt(c.name)} style={C.qBtn(added)}>{added?"✓ ":"+ "}{c.name}</button>;})}
               </div>
               <PlatformInput placeholder={t.ytPlaceholder} addLabel={t.addBtn} accentColor="#cc3333" onAdd={addYt}/>
               <ChipList items={ytList} onRemove={raw=>setYt(p=>p.filter(c=>c.raw!==raw))} chipColor="#ff7777" chipBg="#1a0505" chipBorder="#5a1a1a" noLabel={t.noCreators}/>
@@ -430,7 +430,7 @@ export default function App() {
                 </div>
                 <div style={C.qLabel("#1a3a4a")}>{t.biliQuickAdd}</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:14}}>
-                  {POPULAR_BILIBILI.map(c=>{const added=!!biliList.find(x=>x.d===c.name);return(<button key={c.id} onClick={()=>!added&&addBili(c.name)} style={{background:added?"#051a0a":"#05101a",border:`1px solid ${added?"#1a4a2a":"#0a2a3a"}`,borderRadius:99,padding:"5px 12px",fontFamily:"sans-serif",fontSize:12,color:added?"#4caf50":"#3a7a9a",cursor:added?"default":"pointer"}}>{added?"✓ ":"+ "}{c.name}</button>);})}
+                  {POPULAR_BILIBILI.map(c=>{const added=!!biliList.find(x=>x.d===c.name);return(<button key={c.id} onClick={()=>added?setBili(p=>p.filter(x=>x.d!==c.name)):addBili(c.name)} style={{background:added?"#051a0a":"#05101a",border:`1px solid ${added?"#1a4a2a":"#0a2a3a"}`,borderRadius:99,padding:"5px 12px",fontFamily:"sans-serif",fontSize:12,color:added?"#4caf50":"#3a7a9a",cursor:"pointer"}}>{added?"✓ ":"+ "}{c.name}</button>);})}
                 </div>
                 <PlatformInput placeholder={t.biliPlaceholder} addLabel={t.addBtn} accentColor="#0088aa" onAdd={addBili}/>
                 <ChipList items={biliList} onRemove={raw=>setBili(p=>p.filter(c=>c.raw!==raw))} chipColor="#66ccee" chipBg="#05151f" chipBorder="#1a4a5a" noLabel={t.noCreators}/>
