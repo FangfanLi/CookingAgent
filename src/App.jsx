@@ -37,9 +37,9 @@ const I18N = {
   en: {
     badge:"🍳 Weekly Meal Planner", h1:["Cook like","your favorites."],
     sub:"Add your cooking creators → get a full week of meals & groceries",
-    apiLabel:"Anthropic API Key", apiSaved:"✓ Saved", apiSetup:"Set up →", apiHide:"Hide",
-    apiDesc:<>Free key at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style={{color:"#c87020"}}>console.anthropic.com</a> → API Keys → Create Key. ~$0.03/plan.</>,
-    apiSaveBtn:"Save", apiChange:"Change", apiPlaceholder:"sk-ant-api03-...", apiError:"Key should start with sk-ant-...",
+    apiLabel:"Gemini API Key", apiSaved:"✓ Saved", apiSetup:"Set up →", apiHide:"Hide",
+    apiDesc:<>Free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{color:"#c87020"}}>aistudio.google.com</a> → Get API key. Completely free.</>,
+    apiSaveBtn:"Save", apiChange:"Change", apiPlaceholder:"AIza...", apiError:"Key should start with AIza...", apiSessionKey:"gemini_key",
     ytSection:"YouTube Creators", ytQuickAdd:"Quick add:", ytPlaceholder:"Paste YouTube URL or @handle…",
     biliSection:"Bilibili Creators", biliQuickAdd:"Quick add:", biliPlaceholder:"Paste Bilibili URL, UID, or type a name…",
     addBtn:"Add", noCreators:"None added yet",
@@ -63,9 +63,9 @@ const I18N = {
   zh: {
     badge:"🍳 每周食谱规划", h1:["跟着喜欢的","美食博主做饭。"],
     sub:"添加你喜欢的美食博主 → 获取一周食谱和购物清单",
-    apiLabel:"Anthropic API 密钥", apiSaved:"✓ 已保存", apiSetup:"设置 →", apiHide:"收起",
-    apiDesc:<>在 <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" style={{color:"#c87020"}}>console.anthropic.com</a> 免费获取密钥。每次约 ¥0.20。</>,
-    apiSaveBtn:"保存", apiChange:"更换", apiPlaceholder:"sk-ant-api03-...", apiError:"密钥应以 sk-ant- 开头",
+    apiLabel:"Gemini API 密钥", apiSaved:"✓ 已保存", apiSetup:"设置 →", apiHide:"收起",
+    apiDesc:<>在 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" style={{color:"#c87020"}}>aistudio.google.com</a> 免费获取密钥，无需付费。</>,
+    apiSaveBtn:"保存", apiChange:"更换", apiPlaceholder:"AIza...", apiError:"密钥应以 AIza 开头", apiSessionKey:"gemini_key",
     ytSection:"YouTube 博主", ytQuickAdd:"快速添加：", ytPlaceholder:"粘贴 YouTube 链接或 @handle…",
     biliSection:"B站博主", biliQuickAdd:"快速添加：", biliPlaceholder:"粘贴B站链接、UID 或直接输入博主名…",
     addBtn:"添加", noCreators:"还没有添加博主",
@@ -124,8 +124,8 @@ export default function App() {
   const [history,  setHistory]  = useState([]);
 
   // Session
-  const [apiKey,       setApiKey]       = useState(()=>sessionStorage.getItem("anthro_key")||"");
-  const [apiKeySaved,  setApiKeySaved]  = useState(()=>!!sessionStorage.getItem("anthro_key"));
+  const [apiKey,       setApiKey]       = useState(()=>sessionStorage.getItem("gemini_key")||"");
+  const [apiKeySaved,  setApiKeySaved]  = useState(()=>!!sessionStorage.getItem("gemini_key"));
   const [showKeySetup, setShowKeySetup] = useState(false);
   const [stage,        setStage]        = useState("setup");
   const [currentPlan,  setCurrentPlan]  = useState(null);
@@ -173,7 +173,7 @@ export default function App() {
   const setYt   = v=>{ const next=typeof v==="function"?v(ytList):v;   setYtList(next);   saveCreators(next,biliList); };
   const setBili = v=>{ const next=typeof v==="function"?v(biliList):v; setBiliList(next); saveCreators(ytList,next);   };
 
-  const saveKey=()=>{ if(!apiKey.startsWith("sk-ant-")){setError(t.apiError);return;} sessionStorage.setItem("anthro_key",apiKey); setApiKeySaved(true);setShowKeySetup(false);setError(""); };
+  const saveKey=()=>{ if(!apiKey.startsWith("AIza")){setError(t.apiError);return;} sessionStorage.setItem("gemini_key",apiKey); setApiKeySaved(true);setShowKeySetup(false);setError(""); };
   const addYt   =raw=>{ const d=parseYT(raw);   if(d&&!ytList.find(c=>c.d===d))   setYt(p=>[...p,{raw,d}]); };
   const addBili =raw=>{ const d=parseBili(raw); if(d&&!biliList.find(c=>c.d===d)) setBili(p=>[...p,{raw,d}]); };
 
@@ -189,11 +189,11 @@ export default function App() {
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
     try{
       const prompt=t.prompt(ytList.map(c=>c.d),biliList.map(c=>c.d),recentlyCooked);
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,messages:[{role:"user",content:prompt}]})});
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:1500}})});
       clearInterval(iv);
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API error");}
       const data=await res.json();
-      const text=data.content.map(b=>b.text||"").join("");
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
       const meals=extractMeals(text);
       let plan={id:Date.now(),created_at:new Date().toISOString(),text,meals};
       // Save to DB
@@ -321,7 +321,7 @@ export default function App() {
               )}
               {apiKeySaved&&(
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                  <span style={{fontFamily:"monospace",fontSize:13,color:"#3d2800"}}>sk-ant-••••••••••••••••••••</span>
+                  <span style={{fontFamily:"monospace",fontSize:13,color:"#3d2800"}}>AIza••••••••••••••••••••</span>
                   <button style={{...C.ghost,fontSize:12,padding:"4px 10px"}} onClick={()=>{setApiKeySaved(false);setShowKeySetup(true);}}>{t.apiChange}</button>
                 </div>
               )}
