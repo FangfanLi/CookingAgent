@@ -34,13 +34,15 @@ export default async function handler(req, res) {
       if (!uid) {
         uid = await resolveBilibiliUid(creator.name);
       }
+      console.log("[Bilibili] creator:", creator.name, "resolved UID:", uid);
       if (!uid) return bilibiliFallback(creator.name);
 
       const videos = await fetchBilibiliVideos(uid);
+      console.log("[Bilibili] creator:", creator.name, "videos found:", videos.length);
       if (!videos.length) return bilibiliFallback(creator.name);
       return { name: creator.name, platform: "bilibili", videos: pickVideos(videos) };
     } catch (e) {
-      console.error(`Bilibili error for ${creator.name}:`, e.message);
+      console.error(`[Bilibili] error for ${creator.name}:`, e.message);
       return bilibiliFallback(creator.name);
     }
   });
@@ -89,21 +91,25 @@ async function fetchYouTubeRSS(channelId) {
 // ── Bilibili ─────────────────────────────────────────────────────────────────
 
 async function resolveBilibiliUid(name) {
-  const res = await fetch(
-    `https://api.bilibili.com/x/web-interface/search/type?search_type=bili_user&keyword=${encodeURIComponent(name)}`,
-    { headers: { "User-Agent": "Mozilla/5.0 (compatible; MealPlanner/1.0)" } }
-  );
+  const url = `https://api.bilibili.com/x/web-interface/search/type?search_type=bili_user&keyword=${encodeURIComponent(name)}`;
+  console.log("[Bilibili] resolving UID for:", name, "url:", url);
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MealPlanner/1.0)" },
+  });
   const data = await res.json();
+  console.log("[Bilibili] search response code:", data?.code, "results:", data?.data?.result?.length ?? 0);
   const first = data?.data?.result?.[0];
   return first ? String(first.mid) : null;
 }
 
 async function fetchBilibiliVideos(uid) {
-  const res = await fetch(
-    `https://api.bilibili.com/x/space/arc/search?mid=${uid}&ps=30&pn=1&order=pubdate`,
-    { headers: { "User-Agent": "Mozilla/5.0 (compatible; MealPlanner/1.0)" } }
-  );
+  const url = `https://api.bilibili.com/x/space/arc/search?mid=${uid}&ps=30&pn=1&order=pubdate`;
+  console.log("[Bilibili] fetching videos for UID:", uid, "url:", url);
+  const res = await fetch(url, {
+    headers: { "User-Agent": "Mozilla/5.0 (compatible; MealPlanner/1.0)" },
+  });
   const data = await res.json();
+  console.log("[Bilibili] videos response code:", data?.code, "message:", data?.message, "vlist length:", data?.data?.list?.vlist?.length ?? 0);
   const vlist = data?.data?.list?.vlist || [];
   return vlist.map((v) => ({
     title: v.title,
