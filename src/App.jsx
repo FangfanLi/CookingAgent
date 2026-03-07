@@ -17,12 +17,6 @@ const POPULAR_YOUTUBE_ZH = [
   { name: "酒满饭宝",                   id: "hkchefpo" },
 ];
 const POPULAR_BILIBILI = [
-  { name: "王刚 Chef Wang Gang",    id: "wang-gang" },
-  { name: "曼食慢语 ManCook",       id: "mancook" },
-  { name: "日食记 Ririshiji",       id: "ririshiji" },
-  { name: "大厨江一舟",             id: "jiangYiZhou" },
-  { name: "美食作家王刚",           id: "wanggang2" },
-  { name: "朱一旦的枯燥生活",       id: "zhuyidan" },
   { name: "锅铲居士",               id: "502299736" },
   { name: "叔叔的临时生活安顿处",   id: "1816377225" },
   { name: "米线厨房",               id: "10891313" },
