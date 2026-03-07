@@ -135,15 +135,15 @@ function pickVideos(titles) {
   return { recent: recent, random: shuffled.slice(0, 10) };
 }
 
-// When Bilibili API fails, return the creator with a search-link fallback
-// so they still get included in meal selection
+// When Bilibili API fails, return the creator with empty videos
+// and a fallback search URL for linking purposes
 function bilibiliFallback(name) {
   return {
     name,
     platform: "bilibili",
-    videos: {
-      recent: [{ title: name, url: `https://search.bilibili.com/all?keyword=${encodeURIComponent(name)}` }],
-      random: [],
+    fallback: true,
+    searchUrl: `https://search.bilibili.com/all?keyword=${encodeURIComponent(name)}`,
+    videos: { recent: [], random: [] },
     },
   };
 }
