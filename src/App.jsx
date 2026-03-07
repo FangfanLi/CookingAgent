@@ -108,7 +108,7 @@ function ChipList({items,onRemove,chipColor,chipBg,chipBorder,noLabel}){if(!item
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [lang,        setLang]        = useState("en");
+  const [lang,        setLang]        = useState("zh");
   const t = I18N[lang];
   const SAMPLE = lang==="zh"?SAMPLE_ZH:SAMPLE_EN;
   const POPULAR_YOUTUBE = lang==="zh"?POPULAR_YOUTUBE_ZH:POPULAR_YOUTUBE_EN;
