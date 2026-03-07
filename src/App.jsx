@@ -53,13 +53,14 @@ const I18N = {
     markCooked:"✓ Cooked", markSkipped:"✗ Skip", weekLabel:"Week of",
     needKey:"Please save your API key first.", needCreator:"Add at least one creator.",
     dbLoading:"Loading your data…", dbError:"Could not connect to database — using local storage.",
-    prompt:(yt,bili,history,videoContext)=>{
-      const parts=[];
-      if(yt.length)   parts.push(`YouTube creators: ${yt.join(", ")}`);
-      if(bili.length) parts.push(`Bilibili creators: ${bili.join(", ")}`);
-      const avoid=history.length?`\n\nRecently cooked — please avoid repeating: ${history.join(", ")}.`:"";
-      const videos=videoContext?`\n\nCRITICAL: Here are REAL videos from these creators. You MUST pick 5 meals from this list. Use the EXACT video title as the meal name — do NOT invent recipes.\n${videoContext}`:"";
-      return `You are a weekly meal planning assistant. The user follows:\n${parts.join("\n")}${avoid}${videos}\n\nGenerate a practical weekly meal plan. Respond in English.\n\nIMPORTANT PROTEIN RULE: The 5 meals MUST use at least 4 different proteins — e.g. chicken, beef, seafood, pork, tofu, eggs, lamb. Never repeat the same protein more than once across the week.\n\n## 🗓️ Your Week in Food\n5 meals Mon–Fri. EXACTLY this format per meal (no deviations):\n### [Day] — [Exact Video Title from list above]\n*Inspired by [Creator]*\n[Your description of the dish based on the video title]. [X] min · [Easy/Medium/Hard]\n🔗 [Creator] https://www.youtube.com/results?search_query=[Creator]+[Meal+Name]\n\nIMPORTANT: The [Meal Name] MUST be an exact video title from the list above. Do NOT make up recipe names. Do NOT put the creator name in the meal name.\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+    days:["Monday","Tuesday","Wednesday","Thursday","Friday"],
+    prompt:(creators,history)=>{
+      const avoid=history.length?`\nRecently cooked — please avoid repeating: ${history.join(", ")}.`:"";
+      return `You are a weekly meal planning assistant. The user follows: ${creators.join(", ")}.${avoid}\n\nGenerate a practical weekly meal plan. Respond in English.\n\nIMPORTANT PROTEIN RULE: The 5 meals MUST use at least 4 different proteins — e.g. chicken, beef, seafood, pork, tofu, eggs, lamb. Never repeat the same protein more than once across the week.\n\n## 🗓️ Your Week in Food\n5 meals Mon–Fri. EXACTLY this format per meal (no deviations):\n### [Day] — [Meal Name]\n*Inspired by [Creator]*\n[Description]. [X] min · [Easy/Medium/Hard]\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+    },
+    promptWithVideos:(selectedMeals)=>{
+      const mealList=selectedMeals.map((m,i)=>`${i+1}. "${m.title}" by ${m.creator}`).join("\n");
+      return `You are a weekly meal planning assistant. The user has selected these 5 real recipes for the week:\n\n${mealList}\n\nFor each meal, write EXACTLY this format (keep the meal title exactly as given):\n### [Day] — [Exact title as given above]\n*Inspired by [Creator as given above]*\n[1-2 sentence description of this dish]. [estimated time] min · [Easy/Medium/Hard]\n\nThen provide:\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities for all 5 meals.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nDays are Monday through Friday in order. Use ## ### ** - markdown. Be specific and enthusiastic. Respond in English.`;
     },
   },
   zh: {
@@ -80,13 +81,15 @@ const I18N = {
     markCooked:"✓ 已做", markSkipped:"✗ 跳过", weekLabel:"生成于",
     needKey:"请先保存 API 密钥。", needCreator:"请至少添加一位博主。",
     dbLoading:"正在加载你的数据…", dbError:"无法连接数据库，使用本地存储。",
-    prompt:(yt,bili,history,videoContext)=>{
-      const parts=[];
-      if(yt.length)   parts.push(`YouTube博主：${yt.join("、")}`);
-      if(bili.length) parts.push(`B站博主：${bili.join("、")}`);
-      const avoid=history.length?`\n\n近期已做（请避免重复）：${history.join("、")}。`:"";
-      const videos=videoContext?`\n\n关键要求：以下是这些博主的真实视频列表。你必须从这个列表中选择5道菜，使用视频的原始标题作为菜名，禁止编造不存在的菜谱。\n${videoContext}`:"";
-      return `你是每周食谱规划助手。用户关注：\n${parts.join("\n")}${avoid}${videos}\n\n生成一份实用的一周食谱。完全用中文回答。\n\n重要蛋白质规则：5道菜必须使用至少4种不同蛋白质——例如猪肉、鸡肉、牛肉、海鲜、豆腐、鸡蛋、羊肉。同一种蛋白质不得在一周内重复超过一次。\n\n## 🗓️ 本周食谱\n周一至周五5道菜。严格按此格式（不得更改）：\n### [星期] — [上方视频列表中的原始视频标题]\n*灵感来自 [博主]*\n[根据视频标题描述这道菜]。约[X]分钟 · [简单/中等/难]\n🔗 [博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n\n重要：菜名必须是上方视频列表中的真实视频标题，禁止编造菜名。菜名中不要包含博主名字。\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
+    days:["周一","周二","周三","周四","周五"],
+    prompt:(creators,history)=>{
+      const avoid=history.length?`\n近期已做（请避免重复）：${history.join("、")}。`:"";
+      return `你是每周食谱规划助手。用户关注：${creators.join("、")}。${avoid}\n\n生成一份实用的一周食谱。完全用中文回答。\n\n重要蛋白质规则：5道菜必须使用至少4种不同蛋白质——例如猪肉、鸡肉、牛肉、海鲜、豆腐、鸡蛋、羊肉。同一种蛋白质不得在一周内重复超过一次。\n\n## 🗓️ 本周食谱\n周一至周五5道菜。严格按此格式（不得更改）：\n### [星期] — [菜名]\n*灵感来自 [博主]*\n[描述]。约[X]分钟 · [简单/中等/难]\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
+    },
+    promptWithVideos:(selectedMeals)=>{
+      const mealList=selectedMeals.map((m,i)=>`${i+1}. 「${m.title}」来自 ${m.creator}`).join("\n");
+      return `你是每周食谱规划助手。用户已选好本周的5道菜：\n\n${mealList}\n\n请为每道菜严格按此格式输出（菜名必须与上方完全一致）：\n### [星期] — [上方给出的原始菜名]\n*灵感来自 [上方给出的博主]*\n[1-2句描述这道菜]。约[预估时间]分钟 · [简单/中等/难]\n\n然后提供：\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明5道菜的总用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n星期从周一到周五，按顺序排列。使用 ## ### ** 和 - 格式，内容具体实用。完全用中文回答。`;
+    },
     },
   },
 };
@@ -99,38 +102,50 @@ const SAMPLE_ZH=`## 🗓️ 本周食谱\n\n### 周一 — 红烧肉\n*灵感来
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function extractMeals(text){const meals=[];for(const line of text.split("\n")){const m=line.match(/^###\s+(.+?)\s+[—–-]\s+(.+)$/);if(m)meals.push({day:m[1].trim(),name:m[2].trim(),status:"pending"});}return meals;}
 
-function replaceLinksWithReal(text,videos){
-  // For each 🔗 line, find the best matching video by comparing to the preceding meal name
-  const lines=text.split("\n");
-  let lastMealName="";
-  for(let i=0;i<lines.length;i++){
-    const mealMatch=lines[i].match(/^###\s+.+?\s+[—–-]\s+(.+)$/);
-    if(mealMatch) lastMealName=mealMatch[1].trim().toLowerCase();
-    if(lines[i].startsWith("🔗 ")&&lastMealName){
-      const best=findBestVideoMatch(lastMealName,videos);
-      if(best){
-        // Extract the label (creator name) from the existing line
-        const labelMatch=lines[i].match(/🔗\s+(.+?)\s+https?:\/\//);
-        const mdMatch=lines[i].match(/🔗\s+\[(.+?)\]\(.+?\)/);
-        const label=mdMatch?mdMatch[1]:(labelMatch?labelMatch[1].trim():"Video");
-        lines[i]=`🔗 [${label}](${best.url})`;
-      }
-    }
+// Pick 5 diverse meals from the video pool, trying to spread across creators
+function pickDiverseMeals(pool,count){
+  const shuffled=[...pool].sort(()=>Math.random()-0.5);
+  const picked=[];
+  const usedCreators=new Set();
+  // First pass: one per creator
+  for(const v of shuffled){
+    if(picked.length>=count)break;
+    if(!usedCreators.has(v.creator)){usedCreators.add(v.creator);picked.push(v);}
   }
-  return lines.join("\n");
+  // Second pass: fill remaining
+  for(const v of shuffled){
+    if(picked.length>=count)break;
+    if(!picked.includes(v))picked.push(v);
+  }
+  return picked;
 }
 
-function findBestVideoMatch(mealName,videos){
-  const words=mealName.replace(/[^\w\s\u4e00-\u9fff]/g,"").split(/\s+/).filter(w=>w.length>2);
-  let best=null,bestScore=0;
-  for(const v of videos){
-    const title=v.title.toLowerCase();
-    let score=0;
-    for(const w of words){if(title.includes(w.toLowerCase()))score++;}
-    if(score>bestScore){bestScore=score;best=v;}
+// Inject real 🔗 links into Gemini's output after each meal section
+function injectVideoLinks(text,selectedMeals,days){
+  const lines=text.split("\n");
+  const result=[];
+  let mealIdx=0;
+  for(let i=0;i<lines.length;i++){
+    // Skip any 🔗 lines Gemini generated — we'll add our own
+    if(lines[i].startsWith("🔗 "))continue;
+    result.push(lines[i]);
+    // After a ### heading (meal), scan forward past description, then inject our link
+    if(lines[i].match(/^###\s/)&&mealIdx<selectedMeals.length){
+      const meal=selectedMeals[mealIdx];
+      // Push description lines until empty line or next section
+      let j=i+1;
+      while(j<lines.length&&lines[j].trim()&&!lines[j].startsWith("###")&&!lines[j].startsWith("## ")&&!lines[j].startsWith("🔗")){
+        result.push(lines[j]);j++;
+      }
+      // Insert our real link
+      result.push(`🔗 [${meal.creator}](${meal.url})`);
+      i=j-1;
+      mealIdx++;
+    }
   }
-  return bestScore>0?best:null;
+  return result.join("\n");
 }
+
 function parseYT(v){if(v.includes("youtube.com/@"))return"@"+v.split("youtube.com/@")[1].split(/[/?]/)[0];if(v.includes("youtube.com/c/"))return v.split("youtube.com/c/")[1].split(/[/?]/)[0];if(v.includes("youtube.com/channel/"))return v.split("youtube.com/channel/")[1].split(/[/?]/)[0];return v.trim();}
 function parseBili(v){if(v.includes("space.bilibili.com/"))return"UID:"+v.split("space.bilibili.com/")[1].split(/[/?]/)[0];if(v.includes("bilibili.com/@"))return v.split("bilibili.com/@")[1].split(/[/?]/)[0];return v.trim();}
 
@@ -225,8 +240,7 @@ export default function App() {
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
     try{
       // Fetch real videos from creators (5 recent + 10 random each)
-      let videoContext="";
-      let allVideos=[];
+      let selectedMeals=null;
       try{
         const ytCreators=ytList.map(c=>{const p=[...POPULAR_YOUTUBE_EN,...POPULAR_YOUTUBE_ZH].find(x=>x.name===c.d);return{name:c.d,channelId:p?.id};});
         const biliCreators=biliList.map(c=>{const p=POPULAR_BILIBILI.find(x=>x.name===c.d);return{name:c.d,uid:c.d.startsWith("UID:")?c.d.slice(4):p?.id};});
@@ -234,19 +248,22 @@ export default function App() {
         const timeout=new Promise(r=>setTimeout(()=>r(null),6000));
         const videoData=await Promise.race([videoPromise,timeout]);
         if(videoData?.creators){
-          videoContext=videoData.creators.map(c=>{const vids=[...(c.videos.recent||[]),...(c.videos.random||[])];return`${c.name} (${c.platform}):\n${vids.map(v=>`  - ${v.title}`).join("\n")}`;}).join("\n");
-          allVideos=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])]);
+          const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
+          if(pool.length>=5) selectedMeals=pickDiverseMeals(pool,5);
         }
       }catch(e){console.warn("Video fetch failed, continuing without:",e);}
 
-      const prompt=t.prompt(ytList.map(c=>c.d),biliList.map(c=>c.d),recentlyCooked,videoContext);
+      // If we have pre-selected real meals, ask Gemini just to describe them.
+      // Otherwise fall back to letting Gemini pick meals.
+      const allCreators=[...ytList.map(c=>c.d),...biliList.map(c=>c.d)];
+      const prompt=selectedMeals?t.promptWithVideos(selectedMeals):t.prompt(allCreators,recentlyCooked);
       const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:4000}})});
       clearInterval(iv);
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"API error");}
       const data=await res.json();
       let text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
-      // Post-process: replace search URLs with real video URLs by matching meal names to video titles
-      if(allVideos.length){text=replaceLinksWithReal(text,allVideos);}
+      // Inject real 🔗 links after each meal section
+      if(selectedMeals) text=injectVideoLinks(text,selectedMeals,t.days);
       const meals=extractMeals(text);
       let plan={id:Date.now(),created_at:new Date().toISOString(),text,meals};
       // Save to DB
