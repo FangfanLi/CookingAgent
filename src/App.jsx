@@ -44,7 +44,7 @@ const I18N = {
     biliSection:"Bilibili Creators", biliQuickAdd:"Quick add:", biliPlaceholder:"Paste Bilibili URL, UID, or type a name…",
     addBtn:"Add", noCreators:"None added yet",
     generateBtn:"Generate My Weekly Plan →", previewBtn:"👀 Preview sample",
-    quickDishPlaceholder:"Want just one dish? Describe it…", quickDishBtn:"Quick Dish →",
+    quickDishPlaceholder:"What protein? e.g. chicken, pork, tofu…", quickDishBtn:"Quick Ideas →",
     loadingTitle:"Cooking up your plan…",
     loadingMsgs:["Scanning your creators…","Pulling recent video ideas…","Analyzing recipes…","Building grocery list…","Almost ready…"],
     resultTitle:"This Week's Plan", newPlan:"← Back", save:"↓ Save .md", regenerate:"↺ Regenerate",
@@ -74,13 +74,13 @@ const I18N = {
       const parts=[];
       if(ytCreators.length) parts.push(`YouTube creators: ${ytCreators.join(", ")}`);
       if(biliCreators.length) parts.push(`Bilibili creators: ${biliCreators.join(", ")}`);
-      const videoHint=matchingVideos.length?`\n\nHere are some matching videos from their channels:\n${matchingVideos.map(v=>`- "${v.title}" by ${v.creator} (${v.url})`).join("\n")}\nPrefer using one of these if it matches well.`:"";
+      const videoHint=matchingVideos.length?`\n\nHere are some matching videos from their channels that use this protein:\n${matchingVideos.map(v=>`- "${v.title}" by ${v.creator} (${v.url})`).join("\n")}\nPrefer these real recipes when they fit.`:"";
       const linkRule=ytCreators.length&&biliCreators.length
         ?`🔗 For YouTube creators: [Creator] https://www.youtube.com/results?search_query=[Creator]+[Dish+Name]\n🔗 For Bilibili creators: [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Dish+Name]\nUse the correct link based on which platform the creator is from.`
         :biliCreators.length
         ?`🔗 [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Dish+Name]`
         :`🔗 [Creator] https://www.youtube.com/results?search_query=[Creator]+[Dish+Name]`;
-      return `You are a cooking assistant. The user follows:\n${parts.join("\n")}\n\nThey want to cook: ${keywords}${videoHint}\n\nSuggest exactly ONE dish matching their description. Respond in English.\n\nUse EXACTLY this format:\n### [Dish Name]\n*Inspired by [Creator]*\n[Description of the dish — what makes it great, key flavors]. [X] min · [Easy/Medium/Hard]\n${linkRule}\n\n## 🛒 Quick Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities for just this one dish.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+      return `You are a cooking assistant. The user follows these creators ONLY:\n${parts.join("\n")}\n\nThey have this protein on hand: ${keywords}${videoHint}\n\nSuggest 2–3 dishes they could make with "${keywords}" as the main protein. Each dish MUST be in the style of or inspired by one of the creators listed above — do NOT suggest dishes from other sources.\n\nRespond in English. Use EXACTLY this format for each dish:\n\n### [Dish Name]\n*Inspired by [Creator]*\n[1-2 sentence description — what makes it great, key flavors]. [X] min · [Easy/Medium/Hard]\n${linkRule}\n**You'll also need:** [list the other key ingredients beyond the protein, e.g. "soy sauce, ginger, scallions, rice"]\n\nAfter all dishes, do NOT include a combined grocery list. Keep it simple — the per-dish ingredient line is enough.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
     },
   },
   zh: {
@@ -91,7 +91,7 @@ const I18N = {
     biliSection:"B站博主", biliQuickAdd:"快速添加：", biliPlaceholder:"粘贴B站链接、UID 或直接输入博主名…",
     addBtn:"添加", noCreators:"还没有添加博主",
     generateBtn:"生成本周食谱 →", previewBtn:"👀 查看示例食谱",
-    quickDishPlaceholder:"想做一道菜？描述一下…", quickDishBtn:"快速推荐 →",
+    quickDishPlaceholder:"今晚用什么食材？如：鸡肉、猪肉、豆腐…", quickDishBtn:"快速推荐 →",
     loadingTitle:"正在为你规划本周食谱…",
     loadingMsgs:["分析博主风格…","整理近期视频菜谱…","分析食材和技巧…","生成购物清单…","马上好了…"],
     resultTitle:"本周食谱", newPlan:"← 返回", save:"↓ 保存", regenerate:"↺ 重新生成",
@@ -121,13 +121,13 @@ const I18N = {
       const parts=[];
       if(ytCreators.length) parts.push(`YouTube博主：${ytCreators.join("、")}`);
       if(biliCreators.length) parts.push(`B站博主：${biliCreators.join("、")}`);
-      const videoHint=matchingVideos.length?`\n\n以下是博主频道中匹配的视频：\n${matchingVideos.map(v=>`- 「${v.title}」来自 ${v.creator}（${v.url}）`).join("\n")}\n如果匹配度高，优先使用这些视频。`:"";
+      const videoHint=matchingVideos.length?`\n\n以下是博主频道中使用该食材的视频：\n${matchingVideos.map(v=>`- 「${v.title}」来自 ${v.creator}（${v.url}）`).join("\n")}\n优先使用这些真实菜谱。`:"";
       const linkRule=ytCreators.length&&biliCreators.length
         ?`🔗 YouTube博主：[博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n🔗 B站博主：[博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]\n根据博主所在平台使用对应链接。`
         :biliCreators.length
         ?`🔗 [博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]`
         :`🔗 [博主] https://www.youtube.com/results?search_query=[博主]+[菜名]`;
-      return `你是烹饪助手。用户关注：\n${parts.join("\n")}\n\n他们想做：${keywords}${videoHint}\n\n推荐恰好一道符合描述的菜。完全用中文回答。\n\n严格按此格式：\n### [菜名]\n*灵感来自 [博主]*\n[描述这道菜——特色、关键风味]。约[X]分钟 · [简单/中等/难]\n${linkRule}\n\n## 🛒 快速购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明这一道菜的用量。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
+      return `你是烹饪助手。用户只关注以下博主：\n${parts.join("\n")}\n\n他们手上有这个食材：${keywords}${videoHint}\n\n推荐2-3道以「${keywords}」为主要蛋白质/食材的菜。每道菜必须来自或受启发于上方列出的博主——不要推荐其他来源的菜。\n\n完全用中文回答。严格按此格式输出每道菜：\n\n### [菜名]\n*灵感来自 [博主]*\n[1-2句描述——特色、关键风味]。约[X]分钟 · [简单/中等/难]\n${linkRule}\n**还需要：** [列出除主食材外的其他关键配料，如"酱油、姜、葱、米饭"]\n\n所有菜品之后，不要再列综合购物清单。每道菜的配料行已经足够。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
     },
   },
 };
@@ -325,7 +325,7 @@ export default function App() {
   const generateOne=async(keywords)=>{
     if(!passVerified){setError(t.needPass);return;}
     if(!totalCreators){setError(t.needCreator);return;}
-    if(!keywords.trim()){setError(lang==="zh"?"请输入你想做的菜的描述。":"Please describe what you want to cook.");return;}
+    if(!keywords.trim()){setError(lang==="zh"?"请输入主要食材，如：鸡肉、猪肉、豆腐。":"Please enter a protein, e.g. chicken, pork, tofu.");return;}
     setError("");setStage("generating");
     const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
@@ -353,20 +353,20 @@ export default function App() {
         throw new Error(result.error);
       }
       let text=result.text||"";
-      // Inject real link if we have a matching video
+      // Inject real links if we have matching videos (one per dish section)
       if(matchingVideos.length>0){
         const lines=text.split("\n");
         const out=[];
-        let injected=false;
+        let vidIdx=0;
         for(let i=0;i<lines.length;i++){
-          if(lines[i].startsWith("🔗 ")&&!injected){
-            out.push(`🔗 [${matchingVideos[0].creator}](${matchingVideos[0].url})`);
-            injected=true;
+          if(lines[i].startsWith("🔗 ")&&vidIdx<matchingVideos.length){
+            out.push(`🔗 [${matchingVideos[vidIdx].creator}](${matchingVideos[vidIdx].url})`);
+            vidIdx++;
             continue;
           }
           out.push(lines[i]);
         }
-        if(injected) text=out.join("\n");
+        text=out.join("\n");
       }
       const meals=extractMeals(text);
       const plan={id:Date.now(),created_at:new Date().toISOString(),text,meals};
