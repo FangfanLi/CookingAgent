@@ -38,13 +38,15 @@ const api = {
 const I18N = {
   en: {
     badge:"🍳 Weekly Meal Planner", h1:["Cook like","your favorites."],
-    sub:"Add your cooking creators → get a full week of meals & groceries",
+    sub:"Add your cooking creators → get meal ideas & grocery lists",
     passLabel:"Passphrase", passSaved:"✓ Remembered", passPlaceholder:"Enter passphrase…", passError:"Incorrect passphrase, please try again.", passSaveBtn:"Unlock", passChange:"Change",
     ytSection:"YouTube Creators", ytQuickAdd:"Quick add:", ytPlaceholder:"Paste YouTube URL or @handle…",
     biliSection:"Bilibili Creators", biliQuickAdd:"Quick add:", biliPlaceholder:"Paste Bilibili URL, UID, or type a name…",
     addBtn:"Add", noCreators:"None added yet",
     generateBtn:"Generate My Weekly Plan →", previewBtn:"👀 Preview sample",
     quickDishPlaceholder:"What protein? e.g. chicken, pork, tofu…", quickDishBtn:"Quick Ideas →",
+    quickDishLoading:"Finding dishes for you…",
+    quickDishLoadingMsgs:["Scanning your creators…","Searching for recipes…","Picking the best matches…","Almost ready…"],
     loadingTitle:"Cooking up your plan…",
     loadingMsgs:["Scanning your creators…","Pulling recent video ideas…","Analyzing recipes…","Building grocery list…","Almost ready…"],
     resultTitle:"This Week's Plan", newPlan:"← Back", save:"↓ Save .md", regenerate:"↺ Regenerate",
@@ -85,13 +87,15 @@ const I18N = {
   },
   zh: {
     badge:"🍳 每周食谱规划", h1:["跟着喜欢的","美食博主做饭。"],
-    sub:"添加你喜欢的美食博主 → 获取一周食谱和购物清单",
+    sub:"添加你喜欢的美食博主 → 获取菜谱推荐和购物清单",
     passLabel:"访问口令", passSaved:"✓ 已记住", passPlaceholder:"输入口令…", passError:"口令不正确，请重试。", passSaveBtn:"解锁", passChange:"更换",
     ytSection:"YouTube 博主", ytQuickAdd:"快速添加：", ytPlaceholder:"粘贴 YouTube 链接或 @handle…",
     biliSection:"B站博主", biliQuickAdd:"快速添加：", biliPlaceholder:"粘贴B站链接、UID 或直接输入博主名…",
     addBtn:"添加", noCreators:"还没有添加博主",
     generateBtn:"生成本周食谱 →", previewBtn:"👀 查看示例食谱",
     quickDishPlaceholder:"今晚用什么食材？如：鸡肉、猪肉、豆腐…", quickDishBtn:"快速推荐 →",
+    quickDishLoading:"正在为你找菜谱…",
+    quickDishLoadingMsgs:["分析博主风格…","搜索相关菜谱…","挑选最佳搭配…","马上好了…"],
     loadingTitle:"正在为你规划本周食谱…",
     loadingMsgs:["分析博主风格…","整理近期视频菜谱…","分析食材和技巧…","生成购物清单…","马上好了…"],
     resultTitle:"本周食谱", newPlan:"← 返回", save:"↓ 保存", regenerate:"↺ 重新生成",
@@ -220,6 +224,7 @@ export default function App() {
   const [dishKeywords, setDishKeywords] = useState("");
   const [error,        setError]        = useState("");
   const [loadingMsg,   setLoadingMsg]   = useState("");
+  const [loadingTitle, setLoadingTitle] = useState("");
 
   // ── Load data from DB on mount ───────────────────────────────────────────
   useEffect(()=>{
@@ -274,6 +279,7 @@ export default function App() {
     if(!passVerified){setError(t.needPass);return;}
     if(!totalCreators){setError(t.needCreator);return;}
     setError("");setStage("generating");
+    setLoadingTitle(t.loadingTitle);
     const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
     try{
@@ -327,7 +333,8 @@ export default function App() {
     if(!totalCreators){setError(t.needCreator);return;}
     if(!keywords.trim()){setError(lang==="zh"?"请输入主要食材，如：鸡肉、猪肉、豆腐。":"Please enter a protein, e.g. chicken, pork, tofu.");return;}
     setError("");setStage("generating");
-    const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
+    setLoadingTitle(t.quickDishLoading);
+    const msgs=t.quickDishLoadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
     try{
       // Fetch videos and find keyword matches
@@ -353,15 +360,28 @@ export default function App() {
         throw new Error(result.error);
       }
       let text=result.text||"";
-      // Inject real links if we have matching videos (one per dish section)
+      // Inject real links by matching creator name in the preceding ### section
       if(matchingVideos.length>0){
+        const videosByCreator={};
+        for(const v of matchingVideos){
+          if(!videosByCreator[v.creator]) videosByCreator[v.creator]=v;
+        }
         const lines=text.split("\n");
         const out=[];
-        let vidIdx=0;
+        let currentCreator=null;
         for(let i=0;i<lines.length;i++){
-          if(lines[i].startsWith("🔗 ")&&vidIdx<matchingVideos.length){
-            out.push(`🔗 [${matchingVideos[vidIdx].creator}](${matchingVideos[vidIdx].url})`);
-            vidIdx++;
+          // Track which creator's section we're in via *Inspired by [Creator]*
+          const inspMatch=lines[i].match(/^\*.*?([\u4e00-\u9fff\w\s]+).*\*$/);
+          if(inspMatch){
+            // Find which creator this line mentions
+            for(const name of Object.keys(videosByCreator)){
+              if(lines[i].includes(name)){currentCreator=name;break;}
+            }
+          }
+          // Replace 🔗 line with real link if we have a video from this section's creator
+          if(lines[i].startsWith("🔗 ")&&currentCreator&&videosByCreator[currentCreator]){
+            const v=videosByCreator[currentCreator];
+            out.push(`🔗 [${v.creator}](${v.url})`);
             continue;
           }
           out.push(lines[i]);
@@ -546,7 +566,7 @@ export default function App() {
         {stage==="generating"&&(
           <div style={{textAlign:"center",padding:"80px 20px"}}>
             <div style={{fontSize:52,marginBottom:22,animation:"spin 2s linear infinite",display:"inline-block"}}>🍳</div>
-            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,color:"#f5e6c8",marginBottom:8}}>{t.loadingTitle}</div>
+            <div style={{fontFamily:"'Playfair Display',Georgia,serif",fontSize:22,color:"#f5e6c8",marginBottom:8}}>{loadingTitle}</div>
             <div style={{fontFamily:"sans-serif",fontSize:14,color:"#6a5a3a"}}>{loadingMsg}</div>
           </div>
         )}
