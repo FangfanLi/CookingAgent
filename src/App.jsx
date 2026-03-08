@@ -44,6 +44,7 @@ const I18N = {
     biliSection:"Bilibili Creators", biliQuickAdd:"Quick add:", biliPlaceholder:"Paste Bilibili URL, UID, or type a name…",
     addBtn:"Add", noCreators:"None added yet",
     generateBtn:"Generate My Weekly Plan →", previewBtn:"👀 Preview sample",
+    quickDishPlaceholder:"Want just one dish? Describe it…", quickDishBtn:"Quick Dish →",
     loadingTitle:"Cooking up your plan…",
     loadingMsgs:["Scanning your creators…","Pulling recent video ideas…","Analyzing recipes…","Building grocery list…","Almost ready…"],
     resultTitle:"This Week's Plan", newPlan:"← Back", save:"↓ Save .md", regenerate:"↺ Regenerate",
@@ -69,6 +70,18 @@ const I18N = {
       const mealList=selectedMeals.map((m,i)=>`${i+1}. "${m.title}" by ${m.creator}`).join("\n");
       return `You are a weekly meal planning assistant. The user has selected these 5 real recipes for the week:\n\n${mealList}\n\nFor each meal, write EXACTLY this format (keep the meal title exactly as given):\n### [Day] — [Exact title as given above]\n*Inspired by [Creator as given above]*\n[1-2 sentence description of this dish]. [estimated time] min · [Easy/Medium/Hard]\n\nThen provide:\n\n## 🛒 Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities for all 5 meals.\n\n## ⭐ Chef's Pick\n2–3 sentences on the best dish to start with.\n\nDays are Monday through Friday in order. Use ## ### ** - markdown. Be specific and enthusiastic. Respond in English.`;
     },
+    quickDishPrompt:(ytCreators,biliCreators,keywords,matchingVideos)=>{
+      const parts=[];
+      if(ytCreators.length) parts.push(`YouTube creators: ${ytCreators.join(", ")}`);
+      if(biliCreators.length) parts.push(`Bilibili creators: ${biliCreators.join(", ")}`);
+      const videoHint=matchingVideos.length?`\n\nHere are some matching videos from their channels:\n${matchingVideos.map(v=>`- "${v.title}" by ${v.creator} (${v.url})`).join("\n")}\nPrefer using one of these if it matches well.`:"";
+      const linkRule=ytCreators.length&&biliCreators.length
+        ?`🔗 For YouTube creators: [Creator] https://www.youtube.com/results?search_query=[Creator]+[Dish+Name]\n🔗 For Bilibili creators: [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Dish+Name]\nUse the correct link based on which platform the creator is from.`
+        :biliCreators.length
+        ?`🔗 [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Dish+Name]`
+        :`🔗 [Creator] https://www.youtube.com/results?search_query=[Creator]+[Dish+Name]`;
+      return `You are a cooking assistant. The user follows:\n${parts.join("\n")}\n\nThey want to cook: ${keywords}${videoHint}\n\nSuggest exactly ONE dish matching their description. Respond in English.\n\nUse EXACTLY this format:\n### [Dish Name]\n*Inspired by [Creator]*\n[Description of the dish — what makes it great, key flavors]. [X] min · [Easy/Medium/Hard]\n${linkRule}\n\n## 🛒 Quick Grocery List\nProduce · Proteins · Dairy & Fridge · Pantry · Condiments & Spices. Include quantities for just this one dish.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+    },
   },
   zh: {
     badge:"🍳 每周食谱规划", h1:["跟着喜欢的","美食博主做饭。"],
@@ -78,6 +91,7 @@ const I18N = {
     biliSection:"B站博主", biliQuickAdd:"快速添加：", biliPlaceholder:"粘贴B站链接、UID 或直接输入博主名…",
     addBtn:"添加", noCreators:"还没有添加博主",
     generateBtn:"生成本周食谱 →", previewBtn:"👀 查看示例食谱",
+    quickDishPlaceholder:"想做一道菜？描述一下…", quickDishBtn:"快速推荐 →",
     loadingTitle:"正在为你规划本周食谱…",
     loadingMsgs:["分析博主风格…","整理近期视频菜谱…","分析食材和技巧…","生成购物清单…","马上好了…"],
     resultTitle:"本周食谱", newPlan:"← 返回", save:"↓ 保存", regenerate:"↺ 重新生成",
@@ -102,6 +116,18 @@ const I18N = {
     promptWithVideos:(selectedMeals)=>{
       const mealList=selectedMeals.map((m,i)=>`${i+1}. 「${m.title}」来自 ${m.creator}`).join("\n");
       return `你是每周食谱规划助手。用户已选好本周的5道菜：\n\n${mealList}\n\n请为每道菜严格按此格式输出（菜名必须与上方完全一致）：\n### [星期] — [上方给出的原始菜名]\n*灵感来自 [上方给出的博主]*\n[1-2句描述这道菜]。约[预估时间]分钟 · [简单/中等/难]\n\n然后提供：\n\n## 🛒 购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明5道菜的总用量。\n\n## ⭐ 本周首推\n最值得先做的菜及原因，2-3句。\n\n星期从周一到周五，按顺序排列。使用 ## ### ** 和 - 格式，内容具体实用。完全用中文回答。`;
+    },
+    quickDishPrompt:(ytCreators,biliCreators,keywords,matchingVideos)=>{
+      const parts=[];
+      if(ytCreators.length) parts.push(`YouTube博主：${ytCreators.join("、")}`);
+      if(biliCreators.length) parts.push(`B站博主：${biliCreators.join("、")}`);
+      const videoHint=matchingVideos.length?`\n\n以下是博主频道中匹配的视频：\n${matchingVideos.map(v=>`- 「${v.title}」来自 ${v.creator}（${v.url}）`).join("\n")}\n如果匹配度高，优先使用这些视频。`:"";
+      const linkRule=ytCreators.length&&biliCreators.length
+        ?`🔗 YouTube博主：[博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n🔗 B站博主：[博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]\n根据博主所在平台使用对应链接。`
+        :biliCreators.length
+        ?`🔗 [博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]`
+        :`🔗 [博主] https://www.youtube.com/results?search_query=[博主]+[菜名]`;
+      return `你是烹饪助手。用户关注：\n${parts.join("\n")}\n\n他们想做：${keywords}${videoHint}\n\n推荐恰好一道符合描述的菜。完全用中文回答。\n\n严格按此格式：\n### [菜名]\n*灵感来自 [博主]*\n[描述这道菜——特色、关键风味]。约[X]分钟 · [简单/中等/难]\n${linkRule}\n\n## 🛒 快速购物清单\n蔬菜水果·肉类海鲜·蛋奶豆制品·干货主食·调味料。注明这一道菜的用量。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
     },
   },
 };
@@ -191,6 +217,7 @@ export default function App() {
   const [passVerified,   setPassVerified]   = useState(()=>!!localStorage.getItem("app_passphrase"));
   const [stage,        setStage]        = useState("setup");
   const [currentPlan,  setCurrentPlan]  = useState(null);
+  const [dishKeywords, setDishKeywords] = useState("");
   const [error,        setError]        = useState("");
   const [loadingMsg,   setLoadingMsg]   = useState("");
 
@@ -289,6 +316,60 @@ export default function App() {
         localStorage.setItem("planHistory",JSON.stringify(updated));
       }
       if(dbReady) setHistory(h=>[plan,...h].slice(0,12));
+      setCurrentPlan(plan);
+      setStage("result");
+    }catch(e){clearInterval(iv);setError(e.message);setStage("setup");}
+  };
+
+  // ── Generate One Dish ──────────────────────────────────────────────────
+  const generateOne=async(keywords)=>{
+    if(!passVerified){setError(t.needPass);return;}
+    if(!totalCreators){setError(t.needCreator);return;}
+    if(!keywords.trim()){setError(lang==="zh"?"请输入你想做的菜的描述。":"Please describe what you want to cook.");return;}
+    setError("");setStage("generating");
+    const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
+    const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
+    try{
+      // Fetch videos and find keyword matches
+      let matchingVideos=[];
+      try{
+        const ytCreators=ytList.map(c=>{const p=[...POPULAR_YOUTUBE_EN,...POPULAR_YOUTUBE_ZH].find(x=>x.name===c.d);return{name:c.d,channelId:p?.id};});
+        const biliCreators=biliList.map(c=>{const p=POPULAR_BILIBILI.find(x=>x.name===c.d);return{name:c.d,uid:c.d.startsWith("UID:")?c.d.slice(4):p?.id};});
+        const videoPromise=api.fetchVideos(ytCreators,biliCreators);
+        const timeout=new Promise(r=>setTimeout(()=>r(null),6000));
+        const videoData=await Promise.race([videoPromise,timeout]);
+        if(videoData?.creators){
+          const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
+          const kw=keywords.toLowerCase().split(/\s+/);
+          matchingVideos=pool.filter(v=>kw.some(k=>v.title.toLowerCase().includes(k))).slice(0,5);
+        }
+      }catch(e){console.warn("Video fetch failed, continuing without:",e);}
+
+      const prompt=t.quickDishPrompt(ytList.map(c=>c.d),biliList.map(c=>c.d),keywords,matchingVideos);
+      const result=await api.generate(passphrase,prompt);
+      clearInterval(iv);
+      if(result.error){
+        if(result.error==="incorrect_passphrase"){localStorage.removeItem("app_passphrase");setPassVerified(false);throw new Error(t.passError);}
+        throw new Error(result.error);
+      }
+      let text=result.text||"";
+      // Inject real link if we have a matching video
+      if(matchingVideos.length>0){
+        const lines=text.split("\n");
+        const out=[];
+        let injected=false;
+        for(let i=0;i<lines.length;i++){
+          if(lines[i].startsWith("🔗 ")&&!injected){
+            out.push(`🔗 [${matchingVideos[0].creator}](${matchingVideos[0].url})`);
+            injected=true;
+            continue;
+          }
+          out.push(lines[i]);
+        }
+        if(injected) text=out.join("\n");
+      }
+      const meals=extractMeals(text);
+      const plan={id:Date.now(),created_at:new Date().toISOString(),text,meals};
       setCurrentPlan(plan);
       setStage("result");
     }catch(e){clearInterval(iv);setError(e.message);setStage("setup");}
@@ -445,6 +526,14 @@ export default function App() {
             )}
 
             {error&&<div style={{background:"#1a0800",border:"1px solid #5a1a00",borderRadius:10,padding:"10px 14px",color:"#ff6b35",fontFamily:"sans-serif",fontSize:13,marginBottom:12}}>⚠ {error}</div>}
+
+            {/* Quick Dish */}
+            <div style={{...C.card,border:"1px solid #2a3a1a",marginBottom:12}}>
+              <div style={{display:"flex",gap:8}}>
+                <input style={{...C.input,flex:1}} placeholder={t.quickDishPlaceholder} value={dishKeywords} onChange={e=>setDishKeywords(e.target.value)} onKeyDown={e=>e.key==="Enter"&&dishKeywords.trim()&&generateOne(dishKeywords)}/>
+                <button style={{...C.btn,background:"linear-gradient(135deg,#4a8a2a,#6aaa3a)",whiteSpace:"nowrap",opacity:totalCreators>0&&passVerified&&dishKeywords.trim()?1:0.4}} onClick={()=>generateOne(dishKeywords)} disabled={!totalCreators||!passVerified||!dishKeywords.trim()}>{t.quickDishBtn}</button>
+              </div>
+            </div>
 
             <button style={{...C.bigBtn,opacity:totalCreators>0&&passVerified?1:0.4,marginBottom:10}} onClick={generate} disabled={!totalCreators||!passVerified}>{t.generateBtn}</button>
             <div style={{textAlign:"center"}}>
