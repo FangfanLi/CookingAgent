@@ -82,7 +82,8 @@ const I18N = {
         :biliCreators.length
         ?`🔗 [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Dish+Name]`
         :`🔗 [Creator] https://www.youtube.com/results?search_query=[Creator]+[Dish+Name]`;
-      return `You are a cooking assistant. The user follows these creators ONLY:\n${parts.join("\n")}\n\nThey have this protein on hand: ${keywords}${videoHint}\n\nSuggest 2–3 dishes they could make with "${keywords}" as the main protein. Each dish MUST be in the style of or inspired by one of the creators listed above — do NOT suggest dishes from other sources.\n\nRespond in English. Use EXACTLY this format for each dish:\n\n### [Dish Name]\n*Inspired by [Creator]*\n[1-2 sentence description — what makes it great, key flavors]. [X] min · [Easy/Medium/Hard]\n${linkRule}\n**You'll also need:** [list the other key ingredients beyond the protein, e.g. "soy sauce, ginger, scallions, rice"]\n\nAfter all dishes, do NOT include a combined grocery list. Keep it simple — the per-dish ingredient line is enough.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
+      const seed=Math.floor(Math.random()*9000+1000);
+      return `You are a cooking assistant. The user follows these creators ONLY:\n${parts.join("\n")}\n\nThey have this protein on hand: ${keywords}${videoHint}\n\nSuggest 2–3 dishes they could make with "${keywords}" as the main protein. Each dish MUST be in the style of or inspired by one of the creators listed above — do NOT suggest dishes from other sources.\n\nIMPORTANT: Be creative and vary your suggestions each time. Do not default to the most obvious dishes. Surprise the user with different recipes. (Seed: ${seed})\n\nRespond in English. Use EXACTLY this format for each dish:\n\n### [Dish Name]\n*Inspired by [Creator]*\n[1-2 sentence description — what makes it great, key flavors]. [X] min · [Easy/Medium/Hard]\n${linkRule}\n**You'll also need:** [list the other key ingredients beyond the protein, e.g. "soy sauce, ginger, scallions, rice"]\n\nAfter all dishes, do NOT include a combined grocery list. Keep it simple — the per-dish ingredient line is enough.\n\nUse ## ### ** - markdown. Be specific and enthusiastic.`;
     },
   },
   zh: {
@@ -131,7 +132,8 @@ const I18N = {
         :biliCreators.length
         ?`🔗 [博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]`
         :`🔗 [博主] https://www.youtube.com/results?search_query=[博主]+[菜名]`;
-      return `你是烹饪助手。用户只关注以下博主：\n${parts.join("\n")}\n\n他们手上有这个食材：${keywords}${videoHint}\n\n推荐2-3道以「${keywords}」为主要蛋白质/食材的菜。每道菜必须来自或受启发于上方列出的博主——不要推荐其他来源的菜。\n\n完全用中文回答。严格按此格式输出每道菜：\n\n### [菜名]\n*灵感来自 [博主]*\n[1-2句描述——特色、关键风味]。约[X]分钟 · [简单/中等/难]\n${linkRule}\n**还需要：** [列出除主食材外的其他关键配料，如"酱油、姜、葱、米饭"]\n\n所有菜品之后，不要再列综合购物清单。每道菜的配料行已经足够。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
+      const seed=Math.floor(Math.random()*9000+1000);
+      return `你是烹饪助手。用户只关注以下博主：\n${parts.join("\n")}\n\n他们手上有这个食材：${keywords}${videoHint}\n\n推荐2-3道以「${keywords}」为主要蛋白质/食材的菜。每道菜必须来自或受启发于上方列出的博主——不要推荐其他来源的菜。\n\n重要：每次推荐时请发挥创意，不要总是推荐最常见的菜。给用户带来不同的惊喜。（种子：${seed}）\n\n完全用中文回答。严格按此格式输出每道菜：\n\n### [菜名]\n*灵感来自 [博主]*\n[1-2句描述——特色、关键风味]。约[X]分钟 · [简单/中等/难]\n${linkRule}\n**还需要：** [列出除主食材外的其他关键配料，如"酱油、姜、葱、米饭"]\n\n所有菜品之后，不要再列综合购物清单。每道菜的配料行已经足够。\n\n使用 ## ### ** 和 - 格式，内容具体实用。`;
     },
   },
 };
@@ -349,7 +351,10 @@ export default function App() {
         if(videoData?.creators){
           const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
           const kw=keywords.toLowerCase().split(/\s+/);
-          matchingVideos=pool.filter(v=>kw.some(k=>v.title.toLowerCase().includes(k))).slice(0,5);
+          const matched=pool.filter(v=>kw.some(k=>v.title.toLowerCase().includes(k)));
+          // Shuffle so repeated queries get different candidates
+          for(let i=matched.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[matched[i],matched[j]]=[matched[j],matched[i]];}
+          matchingVideos=matched.slice(0,5);
         }
       }catch(e){console.warn("Video fetch failed, continuing without:",e);}
 
