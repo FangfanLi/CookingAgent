@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { passphrase, prompt } = req.body;
+  const { passphrase, prompt, temperature } = req.body;
 
   // Validate passphrase
   const expected = process.env.APP_PASSPHRASE;
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 4000 },
+          generationConfig: { maxOutputTokens: 4000, temperature: typeof temperature === "number" ? temperature : 1.0 },
         }),
       }
     );
