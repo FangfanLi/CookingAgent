@@ -76,7 +76,7 @@ const I18N = {
       const parts=[];
       if(ytCreators.length) parts.push(`YouTube creators: ${ytCreators.join(", ")}`);
       if(biliCreators.length) parts.push(`Bilibili creators: ${biliCreators.join(", ")}`);
-      const videoHint=matchingVideos.length?`\n\nHere are some matching videos from their channels that use this protein:\n${matchingVideos.map(v=>`- "${v.title}" by ${v.creator} (${v.url})`).join("\n")}\nPrefer these real recipes when they fit.`:"";
+      const videoHint=matchingVideos.length?`\n\nHere are a few videos from their channels for inspiration (you do NOT have to use these — feel free to suggest completely different dishes):\n${matchingVideos.map(v=>`- "${v.title}" by ${v.creator} (${v.url})`).join("\n")}`:"";
       const linkRule=ytCreators.length&&biliCreators.length
         ?`🔗 For YouTube creators: [Creator] https://www.youtube.com/results?search_query=[Creator]+[Dish+Name]\n🔗 For Bilibili creators: [Creator] https://search.bilibili.com/all?keyword=[Creator]+[Dish+Name]\nUse the correct link based on which platform the creator is from.`
         :biliCreators.length
@@ -125,7 +125,7 @@ const I18N = {
       const parts=[];
       if(ytCreators.length) parts.push(`YouTube博主：${ytCreators.join("、")}`);
       if(biliCreators.length) parts.push(`B站博主：${biliCreators.join("、")}`);
-      const videoHint=matchingVideos.length?`\n\n以下是博主频道中使用该食材的视频：\n${matchingVideos.map(v=>`- 「${v.title}」来自 ${v.creator}（${v.url}）`).join("\n")}\n优先使用这些真实菜谱。`:"";
+      const videoHint=matchingVideos.length?`\n\n以下是博主频道中的一些视频供参考（不必一定使用这些——可以推荐完全不同的菜）：\n${matchingVideos.map(v=>`- 「${v.title}」来自 ${v.creator}（${v.url}）`).join("\n")}`:"";
       const linkRule=ytCreators.length&&biliCreators.length
         ?`🔗 YouTube博主：[博主] https://www.youtube.com/results?search_query=[博主]+[菜名]\n🔗 B站博主：[博主] https://search.bilibili.com/all?keyword=[博主]+[菜名]\n根据博主所在平台使用对应链接。`
         :biliCreators.length
@@ -350,9 +350,9 @@ export default function App() {
           const pool=videoData.creators.flatMap(c=>[...(c.videos.recent||[]),...(c.videos.random||[])].map(v=>({...v,creator:c.name,platform:c.platform})));
           const kw=keywords.toLowerCase().split(/\s+/);
           const matched=pool.filter(v=>kw.some(k=>v.title.toLowerCase().includes(k)));
-          // Shuffle so repeated queries get different candidates
+          // Shuffle and pick just 2-3 so Gemini sees genuinely different candidates each time
           for(let i=matched.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[matched[i],matched[j]]=[matched[j],matched[i]];}
-          matchingVideos=matched.slice(0,5);
+          matchingVideos=matched.slice(0,Math.min(3,matched.length));
         }
       }catch(e){console.warn("Video fetch failed, continuing without:",e);}
 
