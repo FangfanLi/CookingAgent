@@ -49,7 +49,7 @@ const I18N = {
     quickDishLoadingMsgs:["Scanning your creators…","Searching for recipes…","Picking the best matches…","Almost ready…"],
     loadingTitle:"Cooking up your plan…",
     loadingMsgs:["Scanning your creators…","Pulling recent video ideas…","Analyzing recipes…","Building grocery list…","Almost ready…"],
-    resultTitle:"This Week's Plan", newPlan:"← Back", save:"↓ Save .md", regenerate:"↺ Regenerate",
+    resultTitle:"This Week's Plan", quickDishResultTitle:"Quick Dish Ideas", newPlan:"← Back", save:"↓ Save .md", regenerate:"↺ Regenerate",
     historyTab:"📋 History", plannerTab:"🍳 Planner", historyTitle:"Past Plans",
     historyEmpty:"No plans yet — generate your first one!",
     markCooked:"✓ Cooked", markSkipped:"✗ Skip", weekLabel:"Week of",
@@ -98,7 +98,7 @@ const I18N = {
     quickDishLoadingMsgs:["分析博主风格…","搜索相关菜谱…","挑选最佳搭配…","马上好了…"],
     loadingTitle:"正在为你规划本周食谱…",
     loadingMsgs:["分析博主风格…","整理近期视频菜谱…","分析食材和技巧…","生成购物清单…","马上好了…"],
-    resultTitle:"本周食谱", newPlan:"← 返回", save:"↓ 保存", regenerate:"↺ 重新生成",
+    resultTitle:"本周食谱", quickDishResultTitle:"快速推荐", newPlan:"← 返回", save:"↓ 保存", regenerate:"↺ 重新生成",
     historyTab:"📋 历史记录", plannerTab:"🍳 规划", historyTitle:"历史食谱",
     historyEmpty:"还没有食谱记录，生成第一份吧！",
     markCooked:"✓ 已做", markSkipped:"✗ 跳过", weekLabel:"生成于",
@@ -222,6 +222,7 @@ export default function App() {
   const [stage,        setStage]        = useState("setup");
   const [currentPlan,  setCurrentPlan]  = useState(null);
   const [dishKeywords, setDishKeywords] = useState("");
+  const [isQuickDish,  setIsQuickDish]  = useState(false);
   const [error,        setError]        = useState("");
   const [loadingMsg,   setLoadingMsg]   = useState("");
   const [loadingTitle, setLoadingTitle] = useState("");
@@ -278,7 +279,7 @@ export default function App() {
   const generate=async()=>{
     if(!passVerified){setError(t.needPass);return;}
     if(!totalCreators){setError(t.needCreator);return;}
-    setError("");setStage("generating");
+    setError("");setStage("generating");setIsQuickDish(false);
     setLoadingTitle(t.loadingTitle);
     const msgs=t.loadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
@@ -332,7 +333,7 @@ export default function App() {
     if(!passVerified){setError(t.needPass);return;}
     if(!totalCreators){setError(t.needCreator);return;}
     if(!keywords.trim()){setError(lang==="zh"?"请输入主要食材，如：鸡肉、猪肉、豆腐。":"Please enter a protein, e.g. chicken, pork, tofu.");return;}
-    setError("");setStage("generating");
+    setError("");setStage("generating");setIsQuickDish(true);
     setLoadingTitle(t.quickDishLoading);
     const msgs=t.quickDishLoadingMsgs;let mi=0;setLoadingMsg(msgs[0]);
     const iv=setInterval(()=>{mi=Math.min(mi+1,msgs.length-1);setLoadingMsg(msgs[mi]);},2200);
@@ -360,28 +361,29 @@ export default function App() {
         throw new Error(result.error);
       }
       let text=result.text||"";
-      // Inject real links by matching creator name in the preceding ### section
+      // Inject real links by matching creator name in the preceding *Inspired by* line
       if(matchingVideos.length>0){
         const videosByCreator={};
         for(const v of matchingVideos){
           if(!videosByCreator[v.creator]) videosByCreator[v.creator]=v;
         }
+        const creatorNames=Object.keys(videosByCreator);
         const lines=text.split("\n");
         const out=[];
         let currentCreator=null;
         for(let i=0;i<lines.length;i++){
-          // Track which creator's section we're in via *Inspired by [Creator]*
-          const inspMatch=lines[i].match(/^\*.*?([\u4e00-\u9fff\w\s]+).*\*$/);
-          if(inspMatch){
-            // Find which creator this line mentions
-            for(const name of Object.keys(videosByCreator)){
+          // Detect *Inspired by [Creator]* or *灵感来自 [Creator]* lines
+          if(lines[i].startsWith("*")&&lines[i].endsWith("*")){
+            currentCreator=null;
+            for(const name of creatorNames){
               if(lines[i].includes(name)){currentCreator=name;break;}
             }
           }
-          // Replace 🔗 line with real link if we have a video from this section's creator
+          // Replace 🔗 line with real link only if we have a video from this dish's creator
           if(lines[i].startsWith("🔗 ")&&currentCreator&&videosByCreator[currentCreator]){
             const v=videosByCreator[currentCreator];
             out.push(`🔗 [${v.creator}](${v.url})`);
+            currentCreator=null;
             continue;
           }
           out.push(lines[i]);
@@ -575,13 +577,13 @@ export default function App() {
         {stage==="result"&&currentPlan&&(
           <>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",color:"#f5e6c8",margin:0,fontSize:21}}>{t.resultTitle}</h2>
+              <h2 style={{fontFamily:"'Playfair Display',Georgia,serif",color:"#f5e6c8",margin:0,fontSize:21}}>{isQuickDish?t.quickDishResultTitle:t.resultTitle}</h2>
               <div style={{display:"flex",gap:8}}>
                 <button style={C.ghost} onClick={()=>{setStage("setup");setCurrentPlan(null);}}>{t.newPlan}</button>
                 <button style={C.btn} onClick={()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([currentPlan.text],{type:"text/markdown"}));a.download="meal_plan.md";a.click();}}>{t.save}</button>
               </div>
             </div>
-            <MealTracker plan={currentPlan}/>
+            {!isQuickDish&&<MealTracker plan={currentPlan}/>}
             <div style={{...C.card,padding:"26px",marginTop:4}}>{parseMd(currentPlan.text)}</div>
             <button style={{...C.bigBtn,marginTop:8}} onClick={()=>{setStage("setup");setCurrentPlan(null);}}>{t.regenerate}</button>
           </>
